@@ -469,6 +469,31 @@ body.sw-file-local .sw-local-note,body.sw-file-local .sw-preview-btn{display:blo
 @media(max-width:560px){.sw-login-main h1{font-size:29px}.sw-login-left{padding:22px 18px 12px}.sw-login-right{padding:10px 14px 24px}.sw-mini-metrics{grid-template-columns:repeat(3,1fr)}}
 
 </style>
+
+<style>
+/* FINAL PATCH - SWIMORA fixed login layout */
+#loginView.sw-v163{
+  grid-template-columns:minmax(0,1.25fr) minmax(520px,.75fr)!important;
+}
+.sw-login-right{
+  padding:24px 50px!important;
+}
+.sw-login-card{
+  width:min(520px,100%)!important;
+  padding:28px 30px!important;
+}
+.sw-login-card h2{
+  font-size:30px!important;
+}
+.sw-local-note,.sw-preview-btn,#loginSupabaseSetup{
+  display:none!important;
+}
+@media(max-width:980px){
+ #loginView.sw-v163{grid-template-columns:1fr!important}
+ .sw-login-right{padding:12px 20px 30px!important}
+ .sw-login-card{width:100%!important}
+}
+</style>
 </head>
 <body>
 <div id="toastWrap" class="toast-wrap"></div>
@@ -504,7 +529,7 @@ body.sw-file-local .sw-local-note,body.sw-file-local .sw-preview-btn{display:blo
       <div class="sw-access-pill"><i></i> Super Admin / Tenant Access</div>
       <h2>Masuk ke sistem</h2>
       <p class="sw-sub">Sistem akan mengenali apakah akun Anda Super Admin SWIMORA atau anggota tenant.</p>
-      <div class="sw-local-note"><b>Mode preview lokal.</b> Login Supabase membutuhkan versi online (https://). Anda tetap bisa melihat preview Dashboard Super Admin dengan tombol di bawah.</div>
+      
       <div class="role-tabs">
         <button class="role-tab active" data-role="admin" onclick="switchLoginRole('admin')"><span class="role-ico">🛡️</span> Admin</button>
         <button class="role-tab" data-role="parent" onclick="switchLoginRole('parent')"><span class="role-ico">👨‍👩‍👧</span> Orang Tua</button>
@@ -523,9 +548,7 @@ body.sw-file-local .sw-local-note,body.sw-file-local .sw-preview-btn{display:blo
         <button class="btn btn-primary btn-block" type="submit">Masuk ke Sistem →</button>
       </form>
       <button class="btn btn-outline btn-block sw-preview-btn" type="button" onclick="previewSuperAdminLocal()">👁 Preview Dashboard Super Admin</button>
-      <div style="margin-top:8px">
-        <button id="toggleSupabaseSetupBtn" class="btn btn-ghost btn-block" type="button" style="font-size:10px" onclick="toggleLoginSupabaseSetup()">⚙ Pengaturan Koneksi Supabase</button>
-        <div id="loginSupabaseSetup" class="hidden" style="margin-top:8px;padding:11px;border:1px solid var(--line);border-radius:12px;background:#f8fbfc">
+      <div id="loginSupabaseSetup" class="hidden" style="display:none!important">
           <div style="font-weight:900;margin-bottom:8px">⚙ Koneksi Supabase</div>
           <div class="field"><label>Supabase Project URL</label><input id="loginSupabaseUrl" placeholder="https://xxxxx.supabase.co" /></div>
           <div class="field"><label>Publishable / Anon Key</label><input id="loginSupabaseKey" type="password" placeholder="sb_publishable_..." /></div>
@@ -786,6 +809,10 @@ const DEFAULT_SUPABASE_URL='https://jfstttwgobdlywxdfbtm.supabase.co';
 // Setelah Publishable Key diisi di sini dan file di-deploy, semua perangkat akan
 // otomatis memakai koneksi Supabase yang sama tanpa setup koneksi per-browser.
 const DEFAULT_SUPABASE_KEY='sb_publishable_gaVMq-kxcrFgTRIb2oe8wg_E5q0G4UU';
+// Cloud connection is embedded in the application build.
+// All devices use this configuration automatically.
+const FORCE_APP_SUPABASE_CONFIG=true;
+
 
 function isUsableSupabaseKey(value){
   const key=String(value||'').trim();
@@ -797,9 +824,9 @@ function getSupabaseConfig(){
   const savedKey=isUsableSupabaseKey(saved.key)?String(saved.key).trim():'';
   const defaultKey=isUsableSupabaseKey(DEFAULT_SUPABASE_KEY)?String(DEFAULT_SUPABASE_KEY).trim():'';
   return {
-    url:normalizeSupabaseUrl(saved.url||DEFAULT_SUPABASE_URL||''),
-    key:savedKey||defaultKey,
-    source:savedKey?'browser':(defaultKey?'app':'none')
+    url:normalizeSupabaseUrl(DEFAULT_SUPABASE_URL||''),
+    key:defaultKey,
+    source:'app'
   };
 }
 const CLOUD_STATE_TABLE='club_state';
@@ -1277,7 +1304,7 @@ async function login(e){
     }catch(err){
       const detail=explainNetworkFailure(err);
       const status=document.getElementById('loginSupabaseStatus'); if(status)status.innerHTML='<b style="color:#c63b4d">Login gagal:</b> '+esc(detail);
-      if(/failed to fetch|networkerror|load failed/i.test(String(err?.message||''))) toggleLoginSupabaseSetup(true);
+
       toast('Login Supabase gagal: '+detail,'error');
     }finally{
       if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=oldText||'Masuk ke Sistem →';}
@@ -1577,11 +1604,61 @@ function studentTTLText(s){
 }
 function studentSchoolText(s){return (s?.school||'').trim()||'Belum diisi'}
 function showStudentCard(id){const s=student(id),logo=currentClubLogo();if(!s)return;const ttl=studentTTLText(s),school=studentSchoolText(s);openModal('Kartu Siswa',`<div id="studentCardPrint" class="member-card-pro"><div class="member-card-head"><div class="member-card-brand"><img src="${logo}" alt="Logo Trudgen Swimming Club"><div><b>TRUDGEN<br>SWIMMING CLUB</b><span>OFFICIAL MEMBER CARD</span></div></div><div style="text-align:right"><div style="font-size:9px;opacity:.55;letter-spacing:1px">MEMBER ID</div><b class="mono" style="font-size:14px">${s.id}</b></div></div><div class="member-card-body"><div><div class="member-name">${esc(s.name)}</div><div class="member-class-pill">${esc(s.class||'Siswa')}</div><div class="member-bio"><div class="member-bio-row"><span>Nama</span><b>${esc(s.name)}</b></div><div class="member-bio-row"><span>TTL</span><b>${esc(ttl)}</b></div><div class="member-bio-row"><span>Asal Sekolah</span><b>${esc(school)}</b></div></div></div><div class="member-qr-box"><div id="memberQRCode"></div><div class="mono" style="color:#071a2d;font-size:9px;font-weight:800;margin-top:5px">${s.id}</div></div></div><div class="member-card-foot"><span>Scan QR untuk absensi</span><span>Les & Privat Renang • Kota Serang</span></div></div>`,'Cetak Kartu',`printStudentCard('${s.id}')`);setTimeout(()=>renderQrCode('memberQRCode',s.id,106),60)}
-function printStudentCard(id){const s=student(id),logo=currentClubLogo();if(!s)return;const ttl=studentTTLText(s),school=studentSchoolText(s);const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser. Izinkan popup untuk mencetak.','error');w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Kartu Siswa ${esc(s.name)}</title><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><style>*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;display:grid;place-items:center;min-height:100vh}.card{width:85.6mm;height:54mm;border-radius:5mm;padding:4.7mm;background:linear-gradient(135deg,#06192d 0%,#0a4469 55%,#0d7291 100%);color:white;position:relative;overflow:hidden}.card:after{content:"";position:absolute;width:65mm;height:18mm;right:-12mm;bottom:-7mm;background:linear-gradient(90deg,transparent,rgba(27,183,206,.22));transform:rotate(-7deg);border-radius:30mm}.head,.body,.foot{position:relative;z-index:1}.head{display:flex;justify-content:space-between;align-items:flex-start}.brand{display:flex;gap:3mm;align-items:center}.brand img{width:13mm;height:13mm;border-radius:3mm;object-fit:cover;border:1px solid rgba(255,255,255,.2)}.brand b{font-size:11px;line-height:1.08}.brand span{display:block;font-size:5.5px;letter-spacing:1px;opacity:.65;margin-top:2px}.body{display:grid;grid-template-columns:1fr 25mm;gap:4mm;align-items:end;margin-top:3.5mm}.name{font-size:14px;font-weight:900;margin-bottom:1.2mm}.class-pill{display:inline-block;padding:1mm 2.2mm;border-radius:99px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.15);font-size:5.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-bottom:1.8mm}.bio{display:grid;gap:.9mm}.bio-row{display:grid;grid-template-columns:17mm 1fr;gap:1.5mm;align-items:start}.bio-row span{font-size:4.7px;letter-spacing:.45px;text-transform:uppercase;opacity:.55;font-weight:700;padding-top:.25mm}.bio-row b{font-size:6px;line-height:1.25;font-weight:700}.qr{background:white;border-radius:3mm;padding:1.8mm;display:grid;place-items:center}.qr canvas,.qr img{width:20mm!important;height:20mm!important}.code{font-size:5.5px;color:#071a2d;text-align:center;font-weight:bold;margin-top:.8mm}.foot{display:flex;justify-content:space-between;font-size:5.3px;opacity:.72;margin-top:1.5mm}@page{size:85.6mm 54mm;margin:0}@media print{body{min-height:auto}.card{break-inside:avoid}}</style></head><body><div class="card"><div class="head"><div class="brand"><img src="${logo}"><div><b>TRUDGEN<br>SWIMMING CLUB</b><span>OFFICIAL MEMBER CARD</span></div></div><div style="text-align:right;font-size:6px"><span style="opacity:.55">MEMBER ID</span><br><b>${s.id}</b></div></div><div class="body"><div><div class="name">${esc(s.name)}</div><div class="class-pill">${esc(s.class||'Siswa')}</div><div class="bio"><div class="bio-row"><span>Nama</span><b>${esc(s.name)}</b></div><div class="bio-row"><span>TTL</span><b>${esc(ttl)}</b></div><div class="bio-row"><span>Asal Sekolah</span><b>${esc(school)}</b></div></div></div><div class="qr"><div id="printMemberQR"></div><div class="code">${s.id}</div></div></div><div class="foot"><span>Scan QR untuk absensi</span><span>Trudgen SC • Kota Serang</span></div></div><script>window.onload=function(){new QRCode(document.getElementById('printMemberQR'),{text:${JSON.stringify(s.id)},width:84,height:84,colorDark:'#071a2d',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});setTimeout(function(){window.print()},250)}<\/script></body></html>`);w.document.close()}
+function printStudentCard(id){const s=student(id),logo=currentClubLogo();if(!s)return;const ttl=studentTTLText(s),school=studentSchoolText(s);const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser. Izinkan popup untuk mencetak.','error');w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Kartu Siswa ${esc(s.name)}</title><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><style>*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#fff;display:grid;place-items:center;min-height:100vh}.card{width:85.6mm;height:54mm;border-radius:5mm;padding:4.7mm;background:linear-gradient(135deg,#06192d 0%,#0a4469 55%,#0d7291 100%);color:white;position:relative;overflow:hidden}.card:after{content:"";position:absolute;width:65mm;height:18mm;right:-12mm;bottom:-7mm;background:linear-gradient(90deg,transparent,rgba(27,183,206,.22));transform:rotate(-7deg);border-radius:30mm}.head,.body,.foot{position:relative;z-index:1}.head{display:flex;justify-content:space-between;align-items:flex-start}.brand{display:flex;gap:3mm;align-items:center}.brand img{width:13mm;height:13mm;border-radius:3mm;object-fit:cover;border:1px solid rgba(255,255,255,.2)}.brand b{font-size:11px;line-height:1.08}.brand span{display:block;font-size:5.5px;letter-spacing:1px;opacity:.65;margin-top:2px}.body{display:grid;grid-template-columns:1fr 25mm;gap:4mm;align-items:end;margin-top:3.5mm}.name{font-size:14px;font-weight:900;margin-bottom:1.2mm}.class-pill{display:inline-block;padding:1mm 2.2mm;border-radius:99px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.15);font-size:5.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-bottom:1.8mm}.bio{display:grid;gap:.9mm}.bio-row{display:grid;grid-template-columns:17mm 1fr;gap:1.5mm;align-items:start}.bio-row span{font-size:4.7px;letter-spacing:.45px;text-transform:uppercase;opacity:.55;font-weight:700;padding-top:.25mm}.bio-row b{font-size:6px;line-height:1.25;font-weight:700}.qr{background:white;border-radius:3mm;padding:1.8mm;display:grid;place-items:center}.qr canvas,.qr img{width:20mm!important;height:20mm!important}.code{font-size:5.5px;color:#071a2d;text-align:center;font-weight:bold;margin-top:.8mm}.foot{display:flex;justify-content:space-between;font-size:5.3px;opacity:.72;margin-top:1.5mm}@page{size:85.6mm 54mm;margin:0}@media print{body{min-height:auto}.card{break-inside:avoid}}</style>
+<style>
+/* FINAL PATCH - SWIMORA fixed login layout */
+#loginView.sw-v163{
+  grid-template-columns:minmax(0,1.25fr) minmax(520px,.75fr)!important;
+}
+.sw-login-right{
+  padding:24px 50px!important;
+}
+.sw-login-card{
+  width:min(520px,100%)!important;
+  padding:28px 30px!important;
+}
+.sw-login-card h2{
+  font-size:30px!important;
+}
+.sw-local-note,.sw-preview-btn,#loginSupabaseSetup{
+  display:none!important;
+}
+@media(max-width:980px){
+ #loginView.sw-v163{grid-template-columns:1fr!important}
+ .sw-login-right{padding:12px 20px 30px!important}
+ .sw-login-card{width:100%!important}
+}
+</style>
+</head><body><div class="card"><div class="head"><div class="brand"><img src="${logo}"><div><b>TRUDGEN<br>SWIMMING CLUB</b><span>OFFICIAL MEMBER CARD</span></div></div><div style="text-align:right;font-size:6px"><span style="opacity:.55">MEMBER ID</span><br><b>${s.id}</b></div></div><div class="body"><div><div class="name">${esc(s.name)}</div><div class="class-pill">${esc(s.class||'Siswa')}</div><div class="bio"><div class="bio-row"><span>Nama</span><b>${esc(s.name)}</b></div><div class="bio-row"><span>TTL</span><b>${esc(ttl)}</b></div><div class="bio-row"><span>Asal Sekolah</span><b>${esc(school)}</b></div></div></div><div class="qr"><div id="printMemberQR"></div><div class="code">${s.id}</div></div></div><div class="foot"><span>Scan QR untuk absensi</span><span>Trudgen SC • Kota Serang</span></div></div><script>window.onload=function(){new QRCode(document.getElementById('printMemberQR'),{text:${JSON.stringify(s.id)},width:84,height:84,colorDark:'#071a2d',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});setTimeout(function(){window.print()},250)}<\/script></body></html>`);w.document.close()}
 function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
 
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
-function printableShell(title,content,autoPrint=true){const st=db.settings||{},logo=currentClubLogo();return`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#142d40;margin:0;padding:0;font-size:11px}.print-wrap{padding:0}.official-head{display:grid;grid-template-columns:78px 1fr 78px;align-items:center;gap:10px;border-bottom:4px double #0b3d63;padding:0 8px 12px;margin-bottom:16px}.official-logo{width:70px;height:70px;object-fit:cover;border-radius:14px;background:#061827}.official-copy{text-align:center}.foundation{font-size:14px;font-weight:800;letter-spacing:.3px}.club{font-size:21px;font-weight:900;color:#071a2d;letter-spacing:.6px;margin:3px 0}.tagline{font-size:12px;font-weight:700}.address{font-size:10px;margin-top:4px;line-height:1.35;color:#3c5465}.doc-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #aebfca;padding-bottom:8px;margin-bottom:14px}.doc-head h1{font-size:17px;margin:0;text-transform:uppercase}.doc-meta{text-align:right;color:#667b89;font-size:9px}h2{font-size:16px;margin:4px 0}h3{font-size:13px}p{color:#546b7a;font-size:10px;line-height:1.5}table{width:100%;border-collapse:collapse;font-size:10px;page-break-inside:auto}thead{display:table-header-group}tr{page-break-inside:avoid;page-break-after:auto}th,td{border:1px solid #cdd9e1;padding:6px;text-align:left;vertical-align:top}th{background:#eaf3f7;color:#163b55;font-weight:800}.total{font-size:20px;font-weight:900}.box{border:1px solid #cdd9e1;border-radius:7px;padding:10px;margin:10px 0;page-break-inside:avoid}.score{font-size:28px;font-weight:900;color:#0d5d91}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:10px 0}.summary-item{border:1px solid #cdd9e1;border-radius:6px;padding:8px;text-align:center}.summary-item b{display:block;font-size:17px;color:#0d5d91}.summary-item span{font-size:8px;color:#617786}.signature{display:grid;grid-template-columns:1fr 1fr;gap:70px;margin-top:26px;text-align:center;page-break-inside:avoid}.signature .space{height:44px}.muted{color:#6f8190}.center{text-align:center}.right{text-align:right}.grade{font-size:18px;font-weight:900;color:#0b5f88}.note-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.note{border:1px solid #cdd9e1;border-radius:6px;padding:9px;min-height:70px}.note b{display:block;margin-bottom:5px}.watermark{display:none!important}.program-plan-sheet{page-break-inside:avoid;margin-bottom:12px}.program-plan-sheet .meta{font-size:10px;color:#5b7485;margin:4px 0 7px}.program-plan-divider{border:0;border-top:1px dashed #aabdc8;margin:13px 0}@media print{@page{size:A4;margin:12mm}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><div class="print-wrap"><div class="official-head"><img class="official-logo" src="${logo}" alt="Logo Trudgen Swimming Club"><div class="official-copy"><div class="foundation">${esc(st.foundation||'YAYASAN AZZAHIDAH SETYA MANDIRI')}</div><div class="club">${esc(st.clubName||'TRUDGEN SWIMMING CLUB')}</div><div class="tagline">${esc(st.tagline||'Les dan Privat Renang Kota Serang')}</div><div class="address">Alamat : ${esc(st.address||'Kavling tower-Sepang Masjid RT 002/RW 001, Kel. Sepang, Kec. Taktakan-Kota Serang.')}${st.phone?` • Kontak: ${esc(st.phone)}`:''}</div></div><div></div></div><div class="doc-head"><h1>${esc(title)}</h1><div class="doc-meta">Dicetak ${new Date().toLocaleString('id-ID')}<br>Administrasi Trudgen Swimming Club</div></div>${content}</div>${autoPrint?'<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>':''}</body></html>`}
+function printableShell(title,content,autoPrint=true){const st=db.settings||{},logo=currentClubLogo();return`<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#142d40;margin:0;padding:0;font-size:11px}.print-wrap{padding:0}.official-head{display:grid;grid-template-columns:78px 1fr 78px;align-items:center;gap:10px;border-bottom:4px double #0b3d63;padding:0 8px 12px;margin-bottom:16px}.official-logo{width:70px;height:70px;object-fit:cover;border-radius:14px;background:#061827}.official-copy{text-align:center}.foundation{font-size:14px;font-weight:800;letter-spacing:.3px}.club{font-size:21px;font-weight:900;color:#071a2d;letter-spacing:.6px;margin:3px 0}.tagline{font-size:12px;font-weight:700}.address{font-size:10px;margin-top:4px;line-height:1.35;color:#3c5465}.doc-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:1px solid #aebfca;padding-bottom:8px;margin-bottom:14px}.doc-head h1{font-size:17px;margin:0;text-transform:uppercase}.doc-meta{text-align:right;color:#667b89;font-size:9px}h2{font-size:16px;margin:4px 0}h3{font-size:13px}p{color:#546b7a;font-size:10px;line-height:1.5}table{width:100%;border-collapse:collapse;font-size:10px;page-break-inside:auto}thead{display:table-header-group}tr{page-break-inside:avoid;page-break-after:auto}th,td{border:1px solid #cdd9e1;padding:6px;text-align:left;vertical-align:top}th{background:#eaf3f7;color:#163b55;font-weight:800}.total{font-size:20px;font-weight:900}.box{border:1px solid #cdd9e1;border-radius:7px;padding:10px;margin:10px 0;page-break-inside:avoid}.score{font-size:28px;font-weight:900;color:#0d5d91}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:10px 0}.summary-item{border:1px solid #cdd9e1;border-radius:6px;padding:8px;text-align:center}.summary-item b{display:block;font-size:17px;color:#0d5d91}.summary-item span{font-size:8px;color:#617786}.signature{display:grid;grid-template-columns:1fr 1fr;gap:70px;margin-top:26px;text-align:center;page-break-inside:avoid}.signature .space{height:44px}.muted{color:#6f8190}.center{text-align:center}.right{text-align:right}.grade{font-size:18px;font-weight:900;color:#0b5f88}.note-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.note{border:1px solid #cdd9e1;border-radius:6px;padding:9px;min-height:70px}.note b{display:block;margin-bottom:5px}.watermark{display:none!important}.program-plan-sheet{page-break-inside:avoid;margin-bottom:12px}.program-plan-sheet .meta{font-size:10px;color:#5b7485;margin:4px 0 7px}.program-plan-divider{border:0;border-top:1px dashed #aabdc8;margin:13px 0}@media print{@page{size:A4;margin:12mm}body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>
+<style>
+/* FINAL PATCH - SWIMORA fixed login layout */
+#loginView.sw-v163{
+  grid-template-columns:minmax(0,1.25fr) minmax(520px,.75fr)!important;
+}
+.sw-login-right{
+  padding:24px 50px!important;
+}
+.sw-login-card{
+  width:min(520px,100%)!important;
+  padding:28px 30px!important;
+}
+.sw-login-card h2{
+  font-size:30px!important;
+}
+.sw-local-note,.sw-preview-btn,#loginSupabaseSetup{
+  display:none!important;
+}
+@media(max-width:980px){
+ #loginView.sw-v163{grid-template-columns:1fr!important}
+ .sw-login-right{padding:12px 20px 30px!important}
+ .sw-login-card{width:100%!important}
+}
+</style>
+</head><body><div class="print-wrap"><div class="official-head"><img class="official-logo" src="${logo}" alt="Logo Trudgen Swimming Club"><div class="official-copy"><div class="foundation">${esc(st.foundation||'YAYASAN AZZAHIDAH SETYA MANDIRI')}</div><div class="club">${esc(st.clubName||'TRUDGEN SWIMMING CLUB')}</div><div class="tagline">${esc(st.tagline||'Les dan Privat Renang Kota Serang')}</div><div class="address">Alamat : ${esc(st.address||'Kavling tower-Sepang Masjid RT 002/RW 001, Kel. Sepang, Kec. Taktakan-Kota Serang.')}${st.phone?` • Kontak: ${esc(st.phone)}`:''}</div></div><div></div></div><div class="doc-head"><h1>${esc(title)}</h1><div class="doc-meta">Dicetak ${new Date().toLocaleString('id-ID')}<br>Administrasi Trudgen Swimming Club</div></div>${content}</div>${autoPrint?'<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>':''}</body></html>`}
 function openPrint(title,content){const w=window.open('','_blank');if(!w){toast('Popup diblokir browser. Izinkan popup untuk mencetak.','error');return}w.document.write(printableShell(title,content));w.document.close()}
 function printElement(id,title){const html=document.getElementById(id)?.outerHTML||'';openPrint(title,html)}
 function tableHTML(headers,rows){return`<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
@@ -1967,7 +2044,7 @@ applyPlatformLoginBrand();
 
 <script>
 (function(){
-  if(location.protocol==='file:') document.body.classList.add('sw-file-local');
+  if(location.protocol==='file:') 
 })();
 function previewSuperAdminLocal(){
   document.body.classList.add('sw-preview-active');
