@@ -494,6 +494,10 @@ body.sw-file-local .sw-local-note,body.sw-file-local .sw-preview-btn{display:blo
  .sw-login-card{width:100%!important}
 }
 </style>
+
+<style>
+#loginSupabaseSetup,.supabase-login-settings,.connection-settings{display:none!important;}
+</style>
 </head>
 <body>
 <div id="toastWrap" class="toast-wrap"></div>
@@ -801,7 +805,7 @@ const DEFAULT_TENANT=Object.freeze({id:'trudgen',name:'Trudgen Swimming Club',co
 const DB_KEY='trudgen_club_step5_cloud_v1';
 const LEGACY_DB_KEY='trudgen_club_demo_v1'; // hanya referensi lama; tidak dibaca pada Step 4
 const CFG_KEY='trudgen_cloud_cfg_v1';
-const DEFAULT_SUPABASE_URL='https://jfstttwgobdlywxdfbtm.supabase.co';
+const DEFAULT_SUPABASE_URL='https://jfstttwgobdlywxdftbm.supabase.co';
 
 // PENTING:
 // Isi hanya dengan Supabase Publishable Key (sb_publishable_...) atau legacy anon key.
@@ -819,14 +823,10 @@ function isUsableSupabaseKey(value){
   return !!key && key!=='PASTE_PUBLISHABLE_KEY_HERE' && !/^sb_secret_/i.test(key);
 }
 function getSupabaseConfig(){
-  let saved={};
-  try{saved=JSON.parse(localStorage.getItem(CFG_KEY)||'{}')||{};}catch(e){saved={};}
-  const savedKey=isUsableSupabaseKey(saved.key)?String(saved.key).trim():'';
-  const defaultKey=isUsableSupabaseKey(DEFAULT_SUPABASE_KEY)?String(DEFAULT_SUPABASE_KEY).trim():'';
   return {
-    url:normalizeSupabaseUrl(DEFAULT_SUPABASE_URL||''),
-    key:defaultKey,
-    source:'app'
+    url: normalizeSupabaseUrl(DEFAULT_SUPABASE_URL||''),
+    key: String(DEFAULT_SUPABASE_KEY||'').trim(),
+    source:'deployment'
   };
 }
 const CLOUD_STATE_TABLE='club_state';
@@ -1506,7 +1506,7 @@ function changeClubLogo(event){const file=event.target.files?.[0];if(!file)retur
 function resetClubLogo(){db.settings.logoDataUrl='';saveDB();applyBrandLogo();toast('Logo dikembalikan ke logo bawaan Trudgen Swimming Club.')}
 function renderSettings(){if(!document.getElementById('clubNameSetting'))return;document.getElementById('foundationSetting').value=db.settings.foundation;document.getElementById('clubNameSetting').value=db.settings.clubName;document.getElementById('taglineSetting').value=db.settings.tagline;document.getElementById('clubAddressSetting').value=db.settings.address;document.getElementById('clubPhoneSetting').value=db.settings.phone;document.getElementById('poolWidthSetting').value=db.settings.poolWidth||12;applyBrandLogo();const cfg=getSupabaseConfig();document.getElementById('supabaseUrl').value=cfg.url||'';document.getElementById('supabaseKey').value=cfg.key||'';document.getElementById('cloudLabel').textContent=(cfg.key&&cloudStateLoaded)?'Supabase • Full Admin Cloud':(cfg.key?'Supabase • Siap Login':'Belum Terhubung');document.querySelector('.cloud-dot').style.background=cfg.key?'#18a96b':'#e9b949'}
 function saveSettings(){db.settings.foundation=document.getElementById('foundationSetting').value.trim()||'YAYASAN AZZAHIDAH SETYA MANDIRI';db.settings.clubName=document.getElementById('clubNameSetting').value.trim()||'TRUDGEN SWIMMING CLUB';db.settings.tagline=document.getElementById('taglineSetting').value.trim()||'Les dan Privat Renang Kota Serang';db.settings.address=document.getElementById('clubAddressSetting').value.trim()||'Kavling tower-Sepang Masjid RT 002/RW 001, Kel. Sepang, Kec. Taktakan-Kota Serang.';db.settings.phone=document.getElementById('clubPhoneSetting').value.trim();db.settings.poolWidth=Math.max(1,Number(document.getElementById('poolWidthSetting').value||12));saveDB();applyBrandLogo();toast(`Pengaturan disimpan. Program otomatis memakai 1 lebar = ${db.settings.poolWidth} meter.`)}
-function saveSupabaseConfig(){const url=normalizeSupabaseUrl(document.getElementById('supabaseUrl').value);const key=document.getElementById('supabaseKey').value.trim();if(!url||!isUsableSupabaseKey(key))return toast('URL dan Publishable/Anon Key Supabase wajib valid. Jangan gunakan secret/service_role key.','error');localStorage.setItem(CFG_KEY,JSON.stringify({url,key}));supabaseClient=null;renderSettings();toast('Override koneksi Supabase tersimpan untuk browser ini. Konfigurasi deployment tetap menjadi default perangkat baru.')}
+function saveSupabaseConfig(){const url=normalizeSupabaseUrl(document.getElementById('supabaseUrl').value);const key=document.getElementById('supabaseKey').value.trim();if(!url||!isUsableSupabaseKey(key))return toast('URL dan Publishable/Anon Key Supabase wajib valid. Jangan gunakan secret/service_role key.','error');supabaseClient=null;renderSettings();toast('Override koneksi Supabase tersimpan untuk browser ini. Konfigurasi deployment tetap menjadi default perangkat baru.')}
 
 let currentParentStudentId='';
 function parentOwnedChildren(){return db.students.filter(s=>normalizePhone(s.phone)===currentParentPhone)}
@@ -1629,6 +1629,10 @@ function printStudentCard(id){const s=student(id),logo=currentClubLogo();if(!s)r
  .sw-login-card{width:100%!important}
 }
 </style>
+
+<style>
+#loginSupabaseSetup,.supabase-login-settings,.connection-settings{display:none!important;}
+</style>
 </head><body><div class="card"><div class="head"><div class="brand"><img src="${logo}"><div><b>TRUDGEN<br>SWIMMING CLUB</b><span>OFFICIAL MEMBER CARD</span></div></div><div style="text-align:right;font-size:6px"><span style="opacity:.55">MEMBER ID</span><br><b>${s.id}</b></div></div><div class="body"><div><div class="name">${esc(s.name)}</div><div class="class-pill">${esc(s.class||'Siswa')}</div><div class="bio"><div class="bio-row"><span>Nama</span><b>${esc(s.name)}</b></div><div class="bio-row"><span>TTL</span><b>${esc(ttl)}</b></div><div class="bio-row"><span>Asal Sekolah</span><b>${esc(school)}</b></div></div></div><div class="qr"><div id="printMemberQR"></div><div class="code">${s.id}</div></div></div><div class="foot"><span>Scan QR untuk absensi</span><span>Trudgen SC • Kota Serang</span></div></div><script>window.onload=function(){new QRCode(document.getElementById('printMemberQR'),{text:${JSON.stringify(s.id)},width:84,height:84,colorDark:'#071a2d',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});setTimeout(function(){window.print()},250)}<\/script></body></html>`);w.document.close()}
 function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
 
@@ -1657,6 +1661,10 @@ function printableShell(title,content,autoPrint=true){const st=db.settings||{},l
  .sw-login-right{padding:12px 20px 30px!important}
  .sw-login-card{width:100%!important}
 }
+</style>
+
+<style>
+#loginSupabaseSetup,.supabase-login-settings,.connection-settings{display:none!important;}
 </style>
 </head><body><div class="print-wrap"><div class="official-head"><img class="official-logo" src="${logo}" alt="Logo Trudgen Swimming Club"><div class="official-copy"><div class="foundation">${esc(st.foundation||'YAYASAN AZZAHIDAH SETYA MANDIRI')}</div><div class="club">${esc(st.clubName||'TRUDGEN SWIMMING CLUB')}</div><div class="tagline">${esc(st.tagline||'Les dan Privat Renang Kota Serang')}</div><div class="address">Alamat : ${esc(st.address||'Kavling tower-Sepang Masjid RT 002/RW 001, Kel. Sepang, Kec. Taktakan-Kota Serang.')}${st.phone?` • Kontak: ${esc(st.phone)}`:''}</div></div><div></div></div><div class="doc-head"><h1>${esc(title)}</h1><div class="doc-meta">Dicetak ${new Date().toLocaleString('id-ID')}<br>Administrasi Trudgen Swimming Club</div></div>${content}</div>${autoPrint?'<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>':''}</body></html>`}
 function openPrint(title,content){const w=window.open('','_blank');if(!w){toast('Popup diblokir browser. Izinkan popup untuk mencetak.','error');return}w.document.write(printableShell(title,content));w.document.close()}
@@ -2014,7 +2022,7 @@ async function login(e){
   e.preventDefault();
   if(loginRole!=='admin'){toast('Portal Orang Tua akan diaktifkan setelah autentikasi parent selesai.','error');return;}
   const email=document.getElementById('adminUser').value.trim(),password=document.getElementById('adminPass').value,client=getSupabaseClient();
-  if(!client){const cfg=getSupabaseConfig();document.getElementById('loginSupabaseUrl').value=cfg.url||DEFAULT_SUPABASE_URL;document.getElementById('loginSupabaseKey').value=cfg.key||'';revealSupabaseSetup('<b style="color:#c63b4d">Publishable Key deployment belum tersedia.</b> Isi DEFAULT_SUPABASE_KEY sekali di index.html lalu deploy ulang.');return toast('Konfigurasi Supabase aplikasi belum lengkap.','error');}
+  if(!client){return toast('Koneksi Supabase aplikasi belum siap.','error');}
   const submitBtn=e.submitter||document.querySelector('#loginForm button[type="submit"]'),oldText=submitBtn?.textContent;if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Memeriksa akun & role...';}
   try{
     const {data,error}=await client.auth.signInWithPassword({email,password});if(error)throw error;if(!data?.user)throw new Error('Sesi login tidak terbentuk.');
