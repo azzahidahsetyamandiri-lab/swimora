@@ -499,6 +499,15 @@ body.sw-file-local .sw-local-note,body.sw-file-local .sw-preview-btn{display:blo
 <style>
 #loginSupabaseSetup,.supabase-login-settings,.connection-settings{display:none!important;}
 </style>
+<style>
+/* Readable login panel */
+.sw-login-card{width:min(560px,100%)!important;padding:32px 34px!important;border-radius:28px!important}
+.sw-card-brand{gap:14px;margin-bottom:18px}.sw-card-mark{width:54px;height:54px;font-size:29px}.sw-card-brand strong{font-size:21px}.sw-card-brand span{font-size:11px}
+.sw-access-pill{font-size:12px;padding:8px 12px;margin-bottom:16px}.sw-login-card h2{font-size:34px!important;margin:4px 0 7px!important}.sw-login-card>.sw-sub{font-size:15px;line-height:1.6;margin-bottom:18px}
+.sw-login-card .role-tabs{padding:5px;margin-bottom:17px}.sw-login-card .role-tab{font-size:15px;padding:13px 10px}.sw-login-card .field{margin-bottom:14px}.sw-login-card .field label{font-size:14px;margin-bottom:4px}.sw-login-card .field input{font-size:15px;padding:13px 14px;min-height:50px}.sw-login-card .btn-block{min-height:52px;font-size:15px}.sw-login-card .forgot-link{font-size:14px;margin:-6px 0 16px}
+.login-footer{display:none!important}
+@media(max-width:980px){.sw-login-card{padding:26px 24px!important}.sw-login-card h2{font-size:30px!important}}
+</style>
 </head>
 <body>
 <div id="toastWrap" class="toast-wrap"></div>
@@ -563,7 +572,7 @@ body.sw-file-local .sw-local-note,body.sw-file-local .sw-preview-btn{display:blo
           <div id="loginSupabaseStatus" class="small muted" style="margin-top:8px;line-height:1.5">Gunakan Publishable/Anon Key Supabase.</div>
         </div>
       </div>
-      <div class="login-footer"><span class="secure-dot"></span> Secure access • SWIMORA Cloud</div>
+      
     </div>
   </div>
 </section>
@@ -1283,7 +1292,7 @@ async function submitPublicRegistration(){
     if(!clubId){const clubRes=await client.from('clubs').select('id').eq('code','TRUDGEN').maybeSingle();if(!clubRes.error)clubId=clubRes.data?.id||null;}
     await loadClassMaps(client);
     const pkg=getDefaultPackageForClass(cls);
-    const payload={club_id:clubId,member_code:'REG-'+Date.now().toString(36).toUpperCase(),full_name:name,gender:gender||null,birth_place:birthPlace,birth_date:birth,school_name:school||null,class_id:classIdByName.get(String(cls).toLowerCase())||null,parent_name:parent,parent_phone:phone,package_sessions:pkg,remaining_sessions:pkg,billing_mode:billingValuesForStudent({class:cls,package:pkg}).mode,billing_cycle_sessions:billingValuesForStudent({class:cls,package:pkg}).cycle,last_payment_date:null,join_date:nowISO(),status:'Trial',updated_at:new Date().toISOString()};
+    const payload={club_id:clubId,member_code:'REG-'+Date.now().toString(36).toUpperCase(),full_name:name,gender:gender||null,birth_place:birthPlace,birth_date:birth,school_name:school||null,class_id:classIdByName.get(String(cls).toLowerCase())||null,parent_name:parent,parent_phone:phone,package_sessions:pkg,remaining_sessions:pkg,billing_mode:billingValuesForStudent({class:cls,package:pkg}).mode,billing_cycle_sessions:billingValuesForStudent({class:cls,package:pkg}).cycle,last_payment_date:nowISO(),join_date:nowISO(),status:'Trial',updated_at:new Date().toISOString()};
     const {error}=await client.from('students').insert(payload);if(error)throw error;
     document.getElementById('publicRegisterBody').innerHTML='<div class="public-success"><div class="success-icon">✓</div><h2>Pendaftaran berhasil dikirim</h2><p>Data anak sudah diterima oleh Trudgen Swimming Club dan akan diperiksa oleh admin.</p><button class="btn btn-primary" type="button" onclick="finishPublicRegistration()">Selesai</button></div>';
   }catch(err){console.error('Public registration error',err);const msg=String(err?.message||err);let hint=/row-level security|permission denied|not authorized/i.test(msg)?' Kebijakan RLS Supabase belum mengizinkan INSERT anonim pada tabel students. Aktifkan policy INSERT publik atau gunakan RPC aman untuk pendaftaran publik.':'';toast('Pendaftaran belum tersimpan: '+msg+hint,'error');}
