@@ -1285,17 +1285,37 @@ async function submitPublicRegistration(){
   if(!document.getElementById('pRagree')?.checked)return toast('Mohon centang konfirmasi biodata sebelum mengirim.','error');
   const client=getSupabaseClient();
   if(!client)return toast('Koneksi Supabase belum siap. Buka link menggunakan domain Netlify/HTTPS dan pastikan Publishable Key terpasang.','error');
+  // HP biasanya belum memiliki sesi login, sedangkan laptop admin sudah login. Buat sesi anonim
+  // agar policy RLS authenticated dapat menerima pendaftaran tanpa membuka data siswa.
+  try{
+    const sessionResult=await client.auth.getSession();
+    if(!sessionResult.data?.session){
+      const anonResult=await client.auth.signInAnonymously();
+      if(anonResult.error)throw new Error('Supabase Anonymous Auth belum diaktifkan. Aktifkan Authentication > Providers > Anonymous agar pendaftaran dari HP dapat menyimpan data.');
+    }
+  }catch(sessionErr){return toast(sessionErr?.message||'HP belum mendapat sesi Supabase untuk mengirim data.','error');}
   const btn=document.querySelector('.public-register-actions .btn-primary');const old=btn?.textContent;if(btn){btn.disabled=true;btn.textContent='Mengirim data...';}
   try{
     // Public form intentionally inserts only the student registration row; no read access is needed.
     let clubId=activeClub?.id||null;
     if(!clubId){const clubRes=await client.from('clubs').select('id').eq('code','TRUDGEN').maybeSingle();if(!clubRes.error)clubId=clubRes.data?.id||null;}
     await loadClassMaps(client);
+    // Ambil class_id secara eksplisit untuk tenant aktif. Nama kelas saja tidak cukup
+    // karena tabel students menggunakan UUID class_id dan trigger database mewajibkannya.
+    let selectedClassId=classIdByName.get(String(cls).toLowerCase())||null;
+    if(clubId){
+      const classResult=await client.from('classes').select('id,name').eq('club_id',clubId).eq('active',true);
+      if(!classResult.error){
+        (classResult.data||[]).forEach(row=>{if(row?.id&&row?.name)classIdByName.set(String(row.name).toLowerCase(),String(row.id));});
+        selectedClassId=classIdByName.get(String(cls).toLowerCase())||selectedClassId;
+      }
+    }
+    if(!selectedClassId)throw new Error('ID kelas belum terbaca dari Supabase. Aktifkan policy SELECT publik untuk tabel clubs dan classes, lalu coba lagi.');
     const pkg=getDefaultPackageForClass(cls);
-    const payload={club_id:clubId,member_code:'REG-'+Date.now().toString(36).toUpperCase(),full_name:name,gender:gender||null,birth_place:birthPlace,birth_date:birth,school_name:school||null,class_id:classIdByName.get(String(cls).toLowerCase())||null,parent_name:parent,parent_phone:phone,package_sessions:pkg,remaining_sessions:pkg,billing_mode:billingValuesForStudent({class:cls,package:pkg}).mode,billing_cycle_sessions:billingValuesForStudent({class:cls,package:pkg}).cycle,last_payment_date:nowISO(),join_date:nowISO(),status:'Aktif',updated_at:new Date().toISOString()};
+    const payload={club_id:clubId,member_code:'REG-'+Date.now().toString(36).toUpperCase(),full_name:name,gender:gender||null,birth_place:birthPlace,birth_date:birth,school_name:school||null,class_id:selectedClassId,parent_name:parent,parent_phone:phone,package_sessions:pkg,remaining_sessions:pkg,billing_mode:billingValuesForStudent({class:cls,package:pkg}).mode,billing_cycle_sessions:billingValuesForStudent({class:cls,package:pkg}).cycle,last_payment_date:nowISO(),join_date:nowISO(),status:'Aktif',updated_at:new Date().toISOString()};
     const {error}=await client.from('students').insert(payload);if(error)throw error;
     document.getElementById('publicRegisterBody').innerHTML='<div class="public-success"><div class="success-icon">✓</div><h2>Pendaftaran berhasil dikirim</h2><p>Data anak sudah diterima oleh Trudgen Swimming Club dan akan diperiksa oleh admin.</p><button class="btn btn-primary" type="button" onclick="finishPublicRegistration()">Selesai</button></div>';
-  }catch(err){console.error('Public registration error',err);const msg=String(err?.message||err);let hint=/row-level security|permission denied|not authorized/i.test(msg)?' Kebijakan RLS Supabase belum mengizinkan INSERT anonim pada tabel students. Aktifkan policy INSERT publik atau gunakan RPC aman untuk pendaftaran publik.':'';toast('Pendaftaran belum tersimpan: '+msg+hint,'error');}
+  }catch(err){console.error('Public registration error',err);const msg=String(err?.message||err);let hint=/row-level security|permission denied|not authorized/i.test(msg)?' RLS masih menolak sesi publik. Pastikan policy INSERT untuk role authenticated/anon pada tabel students sudah dibuat.':'';toast('Pendaftaran belum tersimpan: '+msg+hint,'error');}
   finally{if(btn){btn.disabled=false;btn.textContent=old||'Kirim Pendaftaran →';}}
 }
 function finishPublicRegistration(studentId=''){document.getElementById('publicRegisterView').classList.add('hidden');if(currentRole==='parent'){currentParentStudentId=studentId;document.getElementById('appView').classList.remove('hidden');navigate('parent')}else{document.getElementById('loginView').classList.remove('hidden')}}
