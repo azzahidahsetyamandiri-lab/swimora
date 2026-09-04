@@ -1285,15 +1285,15 @@ async function submitPublicRegistration(){
   if(!document.getElementById('pRagree')?.checked)return toast('Mohon centang konfirmasi biodata sebelum mengirim.','error');
   const client=getSupabaseClient();
   if(!client)return toast('Koneksi Supabase belum siap. Buka link menggunakan domain Netlify/HTTPS dan pastikan Publishable Key terpasang.','error');
-  // HP biasanya belum memiliki sesi login, sedangkan laptop admin sudah login. Buat sesi anonim
-  // agar policy RLS authenticated dapat menerima pendaftaran tanpa membuka data siswa.
+  // Pengunjung HP boleh mengirim sebagai role anon. Anonymous Auth tidak wajib,
+  // asalkan RLS tabel students memiliki policy INSERT untuk anon.
   try{
     const sessionResult=await client.auth.getSession();
     if(!sessionResult.data?.session){
       const anonResult=await client.auth.signInAnonymously();
-      if(anonResult.error)throw new Error('Supabase Anonymous Auth belum diaktifkan. Aktifkan Authentication > Providers > Anonymous agar pendaftaran dari HP dapat menyimpan data.');
+      if(anonResult.error)console.info('Anonymous Auth tidak aktif; lanjut menggunakan role anon.',anonResult.error.message);
     }
-  }catch(sessionErr){return toast(sessionErr?.message||'HP belum mendapat sesi Supabase untuk mengirim data.','error');}
+  }catch(sessionErr){console.info('Sesi publik tidak tersedia; lanjut menggunakan role anon.',sessionErr);}
   const btn=document.querySelector('.public-register-actions .btn-primary');const old=btn?.textContent;if(btn){btn.disabled=true;btn.textContent='Mengirim data...';}
   try{
     // Public form intentionally inserts only the student registration row; no read access is needed.
