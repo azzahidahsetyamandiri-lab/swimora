@@ -2356,3 +2356,76 @@ window.pbPeriodizationForStudent=function(s,race,competitionDate,weeks){const ba
 window.updatePBPeriodPreview=function(){const s=student(val('mPBPstudent')),p=s&&pbPeriodizationForStudent(s,val('mPBRace'),val('mPBCompetition'),val('mPBWeeks')),el=document.getElementById('pbPeriodPreview');if(!el)return;el.innerHTML=p?`<div class="program-plan-card"><h4>${esc(p.student.name)} • ${esc(p.race)}</h4><p>PB ${esc(p.pb)} • ${p.weeks} minggu • Puncak ${fmtDate(p.competitionDate)} • ${esc(p.energy.eventClass)} • ${esc(p.energy.primary)}</p>${p.plan.slice(0,2).map(x=>`<div class="program-preview-item"><b>Minggu ${x.week} — ${esc(x.phase)} ${x.deload?'• deload':''}</b><span>${esc(x.focus)} • ${x.volume} m • ${esc(x.intensity)}</span><small>${x.sessions.map(z=>`${esc(z.title)}: warm-up ${z.warmUp[0].dose}; main ${z.mainSet[0].dose}; rest ${z.mainSet[0].rest}`).join(' | ')}</small></div>`).join('')}${p.plan.length>2?'<div class="small muted">Seluruh minggu dan struktur sesi lengkap tersedia pada cetakan A4.</div>':''}</div>`:'<div class="hint">Pilih siswa dengan PB, nomor lomba, tanggal kompetisi, dan durasi program.</div>'}
 window.printPBPeriodization=function(){const s=student(val('mPBPstudent')),p=s&&pbPeriodizationForStudent(s,val('mPBRace'),val('mPBCompetition'),val('mPBWeeks'));if(!p)return toast('Lengkapi data program dan pastikan PB tersedia.','error');const section=x=>`<section class="box"><h2>Minggu ${x.week} — ${esc(x.phase)} ${x.deload?'(Deload / Peak)':''}</h2><p><b>Fokus:</b> ${esc(x.focus)} • <b>Volume:</b> ${x.volume} m • <b>Intensitas:</b> ${esc(x.intensity)}</p>${x.sessions.map(z=>`<div style="border-top:1px solid #d8e5eb;padding:8px 0;break-inside:avoid"><h3>${esc(z.title)}</h3><p><b>Tujuan:</b> ${esc(z.objective)} • <b>Sistem energi:</b> ${esc(z.energy)}</p><ol>${[['Warm-up',z.warmUp],['Pre-main set',z.preMain],['Main set',z.mainSet],['Recovery / skill',z.recovery],['Cool-down',z.coolDown]].map(([label,arr])=>`<li><b>${label}:</b> ${arr.map(a=>`${esc(a.dose)}; target ${esc(a.target)}; rest ${esc(a.rest)}; ${esc(a.intensity)}; ${esc(a.note)}`).join(' | ')}</li>`).join('')}</ol><p class="muted"><b>Catatan pelatih:</b> ${esc(z.coachNote)}</p></div>`).join('')}</section>`;const content=`<div class="box"><b>Atlet:</b> ${esc(s.name)} • ${esc(s.class)}<br><b>Nomor:</b> ${esc(p.race)} • <b>PB:</b> ${esc(p.pb)} • <b>Kompetisi:</b> ${fmtDate(p.competitionDate)} • <b>Durasi:</b> ${p.weeks} minggu<br><b>Profil energi:</b> ${esc(p.energy.eventClass)} — ${esc(p.energy.primary)}; rest utama ${esc(p.energy.rest)}.</div>${p.plan.map(section).join('')}<p class="muted">Program ini menggabungkan zona biophysical, periodisasi, dan kebutuhan sistem energi. Pelatih wajib menyesuaikan usia, pengalaman, kesehatan, jumlah sesi, kualitas teknik, RPE, dan respons pemulihan atlet. Ini bukan diagnosis medis.</p>`;openPrint(`Program PB Profesional — ${s.name}`,content);closeModal()}
 </script>
+
+<script>
+/* MONTHLY ATTENDANCE EXPORT PATCH */
+function normalizeAttendanceMonth(value){
+  const raw=String(value||'').trim();
+  if(/^\d{4}-\d{2}$/.test(raw))return raw;
+  let m=raw.match(/^(\d{1,2})[\/-](\d{4})$/);if(m)return `${m[2]}-${String(m[1]).padStart(2,'0')}`;
+  m=raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);if(m)return `${m[3]}-${String(m[2]).padStart(2,'0')}`;
+  m=raw.match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})$/);if(m)return `${m[1]}-${String(m[2]).padStart(2,'0')}`;
+  return '';
+}
+window.exportAttendanceMonth=function(){
+  const input=document.getElementById('attendanceMonthPicker'),month=normalizeAttendanceMonth(input?.value);
+  if(!month)return toast('Pilih bulan terlebih dahulu.','error');
+  const rows=db.attendance.filter(a=>String(a.date||'').startsWith(month)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+  const head=['Tanggal','Jam','ID Siswa','Nama','Kelas','Sekolah','Metode','Status'];
+  const csv=[head,...rows.map(a=>{const s=student(a.studentId);return[a.date,a.time||'',s?.id||a.studentId,s?.name||a.studentId,s?.class||'',s?.school||'',a.method||'Barcode',a.status||'Hadir']})].map(r=>r.map(attendanceCsvEscape).join(',')).join('\n');
+  download(`rekap-absensi-${month}.csv`,'\ufeff'+csv,'text/csv;charset=utf-8');closeModal();toast(`Rekap ${month} diunduh: ${rows.length} catatan.`);
+};
+window.downloadMonthlyAttendance=function(){
+  const current=nowISO().slice(0,7);
+  openModal('Unduh Rekap Absensi Bulanan',`<div class="hint">Pilih bulan yang ingin diunduh. Sistem akan membuat file CSV yang dapat dibuka di Excel.</div><div class="field" style="margin-top:14px"><label for="attendanceMonthPicker">Bulan rekap</label><input id="attendanceMonthPicker" type="month" value="${current}" aria-label="Bulan rekap"></div><div class="small muted" style="margin-top:8px">Jika perangkat tidak menampilkan kalender bulan, format yang diterima: YYYY-MM, MM/YYYY, atau DD/MM/YYYY.</div>`,`<button class="btn btn-outline" type="button" onclick="closeModal()">Batal</button><button class="btn btn-primary" type="button" onclick="exportAttendanceMonth()">Unduh Rekap</button>`,'');
+};
+</script>
+
+<style>
+/* CAMERA FOCUS SCANNER PATCH */
+.scanner-camera-stage{position:relative;overflow:hidden;border-radius:18px;background:#061525;min-height:300px;display:flex;align-items:center;justify-content:center}
+.scanner-camera-stage video{display:block;width:100%;height:330px;object-fit:cover;border-radius:18px;background:#061525}
+.scanner-camera-stage::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(3,13,24,.72) 0 12%,transparent 12% 88%,rgba(3,13,24,.72) 88% 100%),linear-gradient(0deg,rgba(3,13,24,.72) 0 20%,transparent 20% 80%,rgba(3,13,24,.72) 80% 100%)}
+.scanner-focus-box{position:absolute;z-index:2;width:min(78%,420px);height:150px;border:2px solid #b8f13e;border-radius:16px;box-shadow:0 0 0 999px rgba(3,13,24,.28),0 0 26px rgba(184,241,62,.35);pointer-events:none}
+.scanner-focus-box::before,.scanner-focus-box::after{content:'';position:absolute;width:30px;height:30px;border-color:#fff;border-style:solid}
+.scanner-focus-box::before{left:-3px;top:-3px;border-width:4px 0 0 4px;border-radius:10px 0 0 0}.scanner-focus-box::after{right:-3px;bottom:-3px;border-width:0 4px 4px 0;border-radius:0 0 10px 0}
+.scanner-focus-line{position:absolute;z-index:3;left:8%;right:8%;top:50%;height:2px;background:#b8f13e;box-shadow:0 0 12px #b8f13e;animation:scannerLine 2s ease-in-out infinite;pointer-events:none}
+@keyframes scannerLine{0%,100%{transform:translateY(-62px);opacity:.45}50%{transform:translateY(62px);opacity:1}}
+.scanner-camera-hint{position:absolute;z-index:4;bottom:12px;left:0;right:0;text-align:center;color:#fff;font-size:12px;text-shadow:0 1px 4px #000;pointer-events:none}
+.scanner-status-live{display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(184,241,62,.12);color:#dfffa4;font-size:13px}
+.scanner-status-live::before{content:'';width:9px;height:9px;border-radius:50%;background:#b8f13e;box-shadow:0 0 10px #b8f13e;animation:scannerPulse 1.2s infinite}@keyframes scannerPulse{50%{opacity:.35;transform:scale(.75)}}
+</style>
+<script>
+/* AUTO FOCUS + AUTO SAVE BARCODE PATCH */
+window.startProfessionalScanner=async function(){
+  const video=document.getElementById('cameraFeed'),status=document.getElementById('scannerStatus');if(!video)return;
+  if(!('BarcodeDetector' in window)){if(status)status.textContent='Browser tidak mendukung scanner otomatis. Gunakan Input ID sebagai fallback.';return}
+  try{
+    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720},focusMode:{ideal:'continuous'}},audio:false});
+    video.srcObject=scannerStream;await video.play();
+    const track=scannerStream.getVideoTracks?.()[0];try{await track?.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(_e){}
+    const detector=new BarcodeDetector({formats:['qr_code','code_128','code_39','code_93','ean_13','ean_8','upc_a']});let busy=false,lastValue='';
+    const scan=async()=>{
+      if(!document.getElementById('cameraFeed'))return;
+      try{
+        const codes=await detector.detect(video),value=codes?.[0]?.rawValue?.trim();
+        if(value&&value!==lastValue&&!busy){
+          busy=true;lastValue=value;const candidate=value.toUpperCase(),s=db.students.find(x=>String(x.id||'').toUpperCase()===candidate||String(x.memberCode||'').toUpperCase()===candidate);
+          if(!s){if(status)status.textContent='Barcode terbaca, tetapi ID siswa tidak ditemukan. Arahkan kartu yang benar.';setTimeout(()=>{busy=false;lastValue=''},1800)}
+          else{
+            if(status)status.textContent=`${s.name} ditemukan. Menyimpan absensi...`;
+            const ok=await window.markAttendanceByCode(s.id,'Barcode');
+            if(ok){if(status)status.textContent=`Absensi ${s.name} berhasil tersimpan.`;setTimeout(()=>{stopScanner();closeModal()},700)}
+            else{if(status)status.textContent='Belum tersimpan ke Supabase. Kamera tetap aktif, silakan ulangi.';busy=false;setTimeout(()=>{lastValue=''},1200)}
+          }
+        }
+      }catch(err){if(status)status.textContent='Menunggu barcode berada tepat di kotak fokus...'}
+      requestAnimationFrame(scan)
+    };
+    if(status)status.textContent='Kamera aktif. Posisikan barcode tepat di dalam kotak fokus.';requestAnimationFrame(scan);
+  }catch(err){if(status)status.textContent='Kamera tidak dapat dibuka: '+(err?.message||'izin ditolak')+'. Gunakan Input ID sebagai fallback.'}
+};
+window.openScanner=function(){
+  openModal('Scan Absensi Otomatis',`<div class="hint">Izinkan kamera, lalu posisikan kartu agar barcode berada tepat di dalam kotak hijau. Setelah terbaca, absensi akan otomatis disimpan dan diverifikasi ke Supabase.</div><div class="scanner-camera-stage"><video id="cameraFeed" autoplay playsinline muted></video><div class="scanner-focus-box"></div><div class="scanner-focus-line"></div><div class="scanner-camera-hint">Jaga kartu tetap stabil · jarak sekitar 15–30 cm</div></div><div id="scannerStatus" class="scanner-status-live">Menyiapkan kamera...</div>`,'','');startProfessionalScanner()
+};
+</script>
