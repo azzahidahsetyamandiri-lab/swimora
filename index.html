@@ -2429,3 +2429,42 @@ window.openScanner=function(){
   openModal('Scan Absensi Otomatis',`<div class="hint">Izinkan kamera, lalu posisikan kartu agar barcode berada tepat di dalam kotak hijau. Setelah terbaca, absensi akan otomatis disimpan dan diverifikasi ke Supabase.</div><div class="scanner-camera-stage"><video id="cameraFeed" autoplay playsinline muted></video><div class="scanner-focus-box"></div><div class="scanner-focus-line"></div><div class="scanner-camera-hint">Jaga kartu tetap stabil · jarak sekitar 15–30 cm</div></div><div id="scannerStatus" class="scanner-status-live">Menyiapkan kamera...</div>`,'','');startProfessionalScanner()
 };
 </script>
+
+<style>
+/* ATTENDANCE CONFIRMATION + CLEAR PATCH */
+.scanner-confirm{margin-top:10px;padding:14px;border:1px solid rgba(184,241,62,.55);border-radius:14px;background:rgba(184,241,62,.12);color:#efffd1}.scanner-confirm strong{display:block;font-size:18px;color:#b8f13e;margin-bottom:4px}.attendance-clear-btn{border:1px solid #f0a8a8;background:#fff4f4;color:#b42318;border-radius:8px;padding:6px 9px;font-size:12px;font-weight:700;cursor:pointer}.attendance-clear-btn:hover{background:#ffe2e2}
+</style>
+<script>
+/* MANUAL CONFIRMATION + ATTENDANCE CLEAR PATCH */
+const originalMarkAttendanceForConfirm=window.markAttendanceByCode;
+let pendingBarcodeStudentId='';
+window.cancelPendingAttendance=function(){pendingBarcodeStudentId='';stopScanner();closeModal()};
+window.savePendingAttendance=async function(){
+  const id=pendingBarcodeStudentId;if(!id)return toast('Belum ada barcode yang terbaca.','error');
+  const btn=document.getElementById('savePendingAttendanceBtn');if(btn){btn.disabled=true;btn.textContent='Menyimpan...'}
+  const ok=await originalMarkAttendanceForConfirm(id,'Barcode');
+  if(ok){pendingBarcodeStudentId='';toast('Kehadiran berhasil disimpan.');setTimeout(()=>closeModal(),350)}else{if(btn){btn.disabled=false;btn.textContent='Simpan Kehadiran'}document.getElementById('scannerStatus')?.replaceChildren(document.createTextNode('Gagal menyimpan. Periksa koneksi Supabase lalu coba lagi.'))}
+};
+window.startProfessionalScanner=async function(){
+  const video=document.getElementById('cameraFeed'),status=document.getElementById('scannerStatus');if(!video)return;
+  pendingBarcodeStudentId='';
+  if(!('BarcodeDetector' in window)){if(status)status.textContent='Browser tidak mendukung scanner otomatis. Gunakan Input ID sebagai fallback.';return}
+  try{
+    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720},focusMode:{ideal:'continuous'}},audio:false});video.srcObject=scannerStream;await video.play();
+    const track=scannerStream.getVideoTracks?.()[0];try{await track?.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(_e){}
+    const detector=new BarcodeDetector({formats:['qr_code','code_128','code_39','code_93','ean_13','ean_8','upc_a']});let busy=false,lastValue='';
+    const scan=async()=>{
+      if(!document.getElementById('cameraFeed')||pendingBarcodeStudentId)return;
+      try{const codes=await detector.detect(video),value=codes?.[0]?.rawValue?.trim();if(value&&value!==lastValue&&!busy){busy=true;lastValue=value;const candidate=value.toUpperCase(),s=db.students.find(x=>String(x.id||'').toUpperCase()===candidate||String(x.memberCode||'').toUpperCase()===candidate);if(!s){if(status)status.textContent='Barcode terbaca, tetapi ID siswa tidak ditemukan.';setTimeout(()=>{busy=false;lastValue=''},1600)}else{pendingBarcodeStudentId=s.id;stopScanner();const result=document.getElementById('scannerResult');if(result)result.textContent=`Siswa ditemukan: ${s.name} (${s.id})`;if(status)status.textContent='Barcode berhasil dibaca. Periksa nama siswa lalu tekan Simpan Kehadiran.';document.getElementById('savePendingAttendanceBtn')?.removeAttribute('hidden');document.getElementById('cancelPendingAttendanceBtn')?.removeAttribute('hidden')}}}catch(err){if(status)status.textContent='Arahkan barcode tepat ke kotak fokus.'}if(!pendingBarcodeStudentId)requestAnimationFrame(scan)};
+    if(status)status.textContent='Kamera aktif. Arahkan barcode ke kotak fokus.';requestAnimationFrame(scan);
+  }catch(err){if(status)status.textContent='Kamera tidak dapat dibuka: '+(err?.message||'izin ditolak')+'. Gunakan Input ID sebagai fallback.'}
+};
+window.openScanner=function(){openModal('Scan Absensi — Konfirmasi Manual',`<div class="hint">Arahkan barcode ke kotak hijau. Setelah terbaca, kamera langsung berhenti dan Anda dapat memeriksa nama siswa sebelum menyimpan.</div><div class="scanner-camera-stage"><video id="cameraFeed" autoplay playsinline muted></video><div class="scanner-focus-box"></div><div class="scanner-focus-line"></div><div class="scanner-camera-hint">Jaga kartu tetap stabil · kamera berhenti setelah terbaca</div></div><div id="scannerStatus" class="scanner-status-live">Menyiapkan kamera...</div><div id="scannerResult" class="scanner-confirm">Belum ada barcode yang terbaca.</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button id="cancelPendingAttendanceBtn" class="btn btn-outline" type="button" onclick="cancelPendingAttendance()">Batal</button><button id="savePendingAttendanceBtn" class="btn btn-primary" type="button" onclick="savePendingAttendance()" hidden>Simpan Kehadiran</button></div>`,'','');startProfessionalScanner()};
+window.deleteAttendanceRecord=async function(id){
+  const record=db.attendance.find(a=>a.id===id);if(!record)return toast('Catatan kehadiran tidak ditemukan.','error');const s=student(record.studentId);if(!confirm(`Hapus absensi ${s?.name||record.studentId} pada ${fmtDate(record.date)}?`))return;
+  const before=db.attendance.slice();db.attendance=db.attendance.filter(a=>a.id!==id);renderAttendance();
+  try{saveDB();await persistClubStateNow();toast('Catatan kehadiran berhasil dihapus dari Supabase.')}catch(err){db.attendance=before;renderAttendance();toast('Catatan tidak dapat dihapus: '+(err?.message||'Periksa koneksi/RLS.'),'error')}
+};
+const originalRenderAttendanceForClear=window.renderAttendance;
+window.renderAttendance=function(){originalRenderAttendanceForClear();const date=selectedAttendanceDate();const rows=db.attendance.filter(a=>a.date===date).sort((a,b)=>(b.time||'').localeCompare(a.time||''));const trs=[...document.querySelectorAll('#attendanceTable tr')];rows.forEach((a,i)=>{const cell=trs[i]?.lastElementChild;if(cell&&!cell.querySelector(`[data-clear-attendance="${a.id}"]`)){const b=document.createElement('button');b.className='attendance-clear-btn';b.dataset.clearAttendance=a.id;b.type='button';b.textContent='Hapus';b.title='Hapus catatan kehadiran ini';b.onclick=()=>window.deleteAttendanceRecord(a.id);cell.appendChild(b)}})};
+</script>
