@@ -2221,3 +2221,138 @@ window.pbPeriodizationForStudent=function(s,race,competitionDate,weeks){const ba
 window.updatePBPeriodPreview=function(){const s=student(val('mPBPstudent')),p=s&&pbPeriodizationForStudent(s,val('mPBRace'),val('mPBCompetition'),val('mPBWeeks')),el=document.getElementById('pbPeriodPreview');if(!el)return;el.innerHTML=p?`<div class="program-plan-card"><h4>${esc(p.student.name)} • ${esc(p.race)}</h4><p>PB ${esc(p.pb)} • ${p.weeks} minggu • Puncak ${fmtDate(p.competitionDate)} • ${esc(p.energy.primary)}</p><p class="small muted">Model: zone-based biophysical + periodisasi; coach dapat mengubah volume, intensity, dan recovery.</p>${p.plan.slice(0,2).map(x=>`<div class="program-preview-item"><b>Minggu ${x.week} — ${esc(x.phase)} ${x.deload?'• deload':''}</b><span>${esc(x.focus)} • ${x.volume} m • ${esc(x.intensity)}</span><small>${x.sessions.map(z=>`${z.day}: ${z.dose}, rest ${z.rest}`).join(' | ')}</small></div>`).join('')}${p.plan.length>2?'<div class="small muted" style="margin-top:7px">Seluruh minggu dan lima sesi per minggu tersedia saat dicetak.</div>':''}</div>`:'<div class="hint">Pilih siswa, nomor lomba, tanggal kompetisi, dan durasi program.</div>'}
 window.printPBPeriodization=function(){const s=student(val('mPBPstudent')),p=s&&pbPeriodizationForStudent(s,val('mPBRace'),val('mPBCompetition'),val('mPBWeeks'));if(!p)return toast('Lengkapi data program dan pastikan PB tersedia.','error');const content=`<div class="box"><b>Atlet:</b> ${esc(s.name)} • ${esc(s.class)}<br><b>Nomor:</b> ${esc(p.race)} • <b>PB:</b> ${esc(p.pb)} • <b>Kompetisi:</b> ${fmtDate(p.competitionDate)}<br><b>Energi dominan:</b> ${esc(p.energy.primary)} • <b>Zona:</b> ${esc(p.energy.zone)} • <b>Volume:</b> individual dari PB dan kelas</div>${p.plan.map(x=>`<section class="box"><h2>Minggu ${x.week} — ${esc(x.phase)} ${x.deload?'(Deload / Peak)':''}</h2><p>${esc(x.focus)} • ${x.volume} m • ${esc(x.intensity)} • high-intensity share ${Math.round(x.highShare*100)}%</p>${x.sessions.map(z=>`<div style="border-top:1px solid #d8e5eb;padding:7px 0"><b>${esc(z.day)}</b><br><span>${esc(z.energy)} • Dosis: ${esc(z.dose)} • Target: ${esc(z.target)} • Rest: ${esc(z.rest)} • ${esc(z.rpe)}</span><br><small>${esc(z.note)}</small></div>`).join('')}</section>`).join('')}<p class="muted">Catatan profesional: jadikan RPE, kualitas teknik, respons pemulihan, dan hasil timing sebagai kontrol harian. Program ini bukan pengganti pemeriksaan medis; pelatih berwenang menurunkan beban atau menghentikan sesi bila atlet mengalami nyeri, pusing, atau keluhan kesehatan.</p>`;openPrint(`Program PB Profesional — ${s.name}`,content);closeModal()}
 </script>
+
+<script>
+/* SWIMORA COACHING + ATTENDANCE RELIABILITY PATCH
+   Attendance is committed to club_state before success is shown.
+   Training sessions are prescriptions for coach review, not medical diagnosis.
+*/
+let attendanceCloudRefreshTimer=null;
+async function persistAttendanceAndVerify(recordId){
+  await syncChangedStudentsToSupabase();
+  await persistClubStateNow();
+  const {client}=await requireAdminSession();
+  const {data,error}=await client.from(CLOUD_STATE_TABLE).select('state,updated_at').eq('state_key',CLOUD_STATE_KEY).maybeSingle();
+  if(error)throw error;
+  const remoteRows=Array.isArray(data?.state?.attendance)?data.state.attendance:[];
+  if(!remoteRows.some(x=>x?.id===recordId))throw new Error('Supabase belum mengonfirmasi catatan absensi. Periksa RLS tabel club_state.');
+  return true;
+}
+window.markAttendanceByCode=async function(code=null,method=null){
+  const date=selectedAttendanceDate();
+  if(!date){toast('Pilih tanggal absensi terlebih dahulu.','error');return false}
+  const input=document.getElementById('barcodeInput'),c=String(code||input?.value||'').trim().toUpperCase();
+  const s=db.students.find(x=>String(x.id||'').toUpperCase()===c||String(x.memberCode||'').toUpperCase()===c);
+  if(!s){toast('ID siswa tidak ditemukan.','error');return false}
+  if(attendanceFor(s.id,date)){toast(s.name+' sudah tercatat hadir pada '+fmtDate(date)+'.','error');return false}
+  const record={id:uid('ATT'),date,time:new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}).replace('.',':'),studentId:s.id,method:method||document.getElementById('attendanceMethod')?.value||'Barcode',status:'Hadir'};
+  db.attendance.push(record);syncSessionRemaining(s);renderAttendance();
+  const status=document.getElementById('scannerStatus');if(status)status.textContent='Kode valid. Menyimpan ke Supabase...';
+  try{
+    await persistAttendanceAndVerify(record.id);
+    if(input)input.value='';
+    renderAttendance();
+    toast(`Kehadiran ${s.name} tersimpan di Supabase untuk ${fmtDate(date)}.`);
+    generateSystemNotifications(false);
+    return true;
+  }catch(err){
+    db.attendance=db.attendance.filter(x=>x.id!==record.id);renderAttendance();
+    console.error('Attendance cloud save error',err);
+    toast('Absensi belum tersimpan ke Supabase: '+(err?.message||'Periksa koneksi/RLS club_state.'),'error');
+    return false;
+  }
+};
+window.refreshAttendanceFromCloud=async function(show=true){
+  try{
+    const {client}=await requireAdminSession();
+    const {data,error}=await client.from(CLOUD_STATE_TABLE).select('state,updated_at').eq('state_key',CLOUD_STATE_KEY).maybeSingle();
+    if(error)throw error;
+    const remote=Array.isArray(data?.state?.attendance)?data.state.attendance:[];
+    db.attendance=remote;
+    renderAttendance();
+    if(show)toast(`Absensi tersinkron: ${remote.length} catatan di Supabase.`);
+    return remote;
+  }catch(err){if(show)toast('Gagal memuat absensi terbaru: '+(err?.message||'Periksa sesi admin.'),'error');return null}
+};
+window.startAttendanceRealtimeRefresh=function(){
+  if(attendanceCloudRefreshTimer)clearInterval(attendanceCloudRefreshTimer);
+  attendanceCloudRefreshTimer=setInterval(()=>{if(document.getElementById('view-attendance')?.classList.contains('active'))window.refreshAttendanceFromCloud(false)},12000);
+};
+window.startProfessionalScanner=async function(){
+  const video=document.getElementById('cameraFeed'),status=document.getElementById('scannerStatus');if(!video)return;
+  if(!('BarcodeDetector' in window)){if(status)status.textContent='Browser tidak mendukung deteksi otomatis. Gunakan Input ID sebagai fallback.';return}
+  try{
+    scannerStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+    video.srcObject=scannerStream;await video.play();
+    const detector=new BarcodeDetector({formats:['qr_code','code_128','code_39','code_93','ean_13','ean_8','upc_a']});
+    let busy=false;
+    const scan=async()=>{
+      if(!document.getElementById('cameraFeed'))return;
+      try{
+        const codes=await detector.detect(video),value=codes?.[0]?.rawValue?.trim();
+        if(value&&!busy){
+          busy=true;const candidate=value.toUpperCase(),s=db.students.find(x=>String(x.id||'').toUpperCase()===candidate||String(x.memberCode||'').toUpperCase()===candidate);
+          if(!s){if(status)status.textContent='Kode terbaca, tetapi ID siswa tidak cocok: '+value;busy=false}
+          else{
+            if(status)status.textContent='ID '+s.id+' valid. Menunggu konfirmasi server...';
+            const ok=await window.markAttendanceByCode(s.id,'Barcode');
+            if(ok){stopScanner();closeModal()}
+            else {if(status)status.textContent='Belum tersimpan. Arahkan ulang atau cek koneksi admin.';busy=false}
+          }
+        }
+      }catch(err){busy=false}
+      requestAnimationFrame(scan)
+    };
+    if(status)status.textContent='Kamera aktif. Setelah kode terbaca, scanner menunggu konfirmasi Supabase.';
+    requestAnimationFrame(scan);
+  }catch(err){if(status)status.textContent='Kamera tidak dapat dibuka: '+(err?.message||'izin ditolak')+'. Gunakan Input ID sebagai fallback.'}
+};
+window.openScanner=function(){openModal('Scanner QR / Barcode',`<div class="hint">Arahkan kode kartu siswa ke kamera. Scanner tidak akan ditutup sebelum Supabase mengonfirmasi absensi tersimpan.</div><video id="cameraFeed" autoplay playsinline muted style="width:100%;max-height:330px;border-radius:14px;background:#061525;margin-top:10px"></video><div id="scannerStatus" class="small muted" style="margin-top:8px">Menyiapkan kamera...</div>`,'','');startProfessionalScanner()};
+function installAttendanceSyncUI(){
+  const btn=[...document.querySelectorAll('button')].find(b=>/Rekap Bulanan/.test(b.textContent));
+  if(btn&&!document.getElementById('syncAttendanceBtn')){const x=document.createElement('button');x.id='syncAttendanceBtn';x.className='btn btn-outline btn-sm';x.textContent='↻ Sinkron dari Supabase';x.onclick=()=>window.refreshAttendanceFromCloud(true);btn.parentNode.insertBefore(x,btn)}
+  window.startAttendanceRealtimeRefresh();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',installAttendanceSyncUI);else setTimeout(installAttendanceSyncUI,250);
+
+function energyModelForRaceProfessional(race){
+  const text=String(race||'').toLowerCase(),m=text.match(/(\d+)\s*m/i),d=m?Number(m[1]):200;
+  if(d<=50)return{eventClass:'Sprint',primary:'ATP-PC / alactic',secondary:'glycolytic',zone:'Z5',raceFactor:.97,rest:'2:00–4:00',rpe:'8–9'};
+  if(d<=200)return{eventClass:'Sprint-middle',primary:'Glycolytic / anaerobic capacity',secondary:'aerobic support',zone:'Z4',raceFactor:.92,rest:'1:30–3:00',rpe:'8–9'};
+  if(d<=400)return{eventClass:'Middle-distance',primary:'Aerobic power + glycolytic support',secondary:'oxidative',zone:'Z3–Z4',raceFactor:.86,rest:'0:30–1:30',rpe:'7–9'};
+  return{eventClass:'Distance',primary:'Aerobic oxidative / threshold',secondary:'glycolytic support',zone:'Z2–Z3',raceFactor:.80,rest:'0:20–1:00',rpe:'6–8'};
+}
+function setLine(label,dose,target,rest,intensity,note){return{label,dose,target,rest,intensity,note}}
+function completeSessionForPB(base,energy,phaseIndex,sessionIndex,week,volume){
+  const pb=base.pbSeconds,pool=poolWidthMeters(),phaseFactor=[.78,.86,.94,.98][phaseIndex],race=base.race;
+  const easy=paceText(pb*1.18),threshold=paceText(pb*1.06),racePace=paceText(pb*energy.raceFactor),quality=paceText(pb*(phaseIndex===3?.97:.93));
+  const templates={
+    0:[
+      {title:'Aerobic Base + Teknik',objective:'Efisiensi stroke dan kapasitas aerobik',energy:'Aerobic oxidative',warm:[setLine('Warm-up','300 m easy + 4 × 50 m','RPE 2–3','15 detik','easy','25 m drill + 25 m swim')],pre:[setLine('Pre-main','8 × 25 m drill','teknik rapi','20 detik','RPE 3','streamline, catch, bodyline')],main:[setLine('Main set',`${Math.max(6,Math.round(volume*.3/pool))} × ${pool} m`,easy,'15–20 detik','RPE 3–4','negative split, stroke count stabil')],recovery:[setLine('Recovery','4 × 50 m','easy conversational','20 detik','RPE 2','long exhale')],cool:[setLine('Cool-down','200 m','very easy','continuous','RPE 1–2','relaksasi') ]},
+      {title:'Neuromuscular + Speed Skill',objective:'Kecepatan teknik tanpa akumulasi laktat berlebih',energy:'ATP-PC / alactic',warm:[setLine('Warm-up','400 m easy + 4 × 50 m build','RPE 2–4','20 detik','progressive','build 1–4')],pre:[setLine('Pre-main','6 × 15 m breakout','maksimal teknis','45 detik','RPE 5','full recovery')],main:[setLine('Main set','2–3 blok × 6 × 15 m',quality,'2:00 antar repetisi; 5:00 antar blok','RPE 8','stop bila kualitas turun')],recovery:[setLine('Recovery','6 × 50 m','easy','30 detik','RPE 2–3','active recovery')],cool:[setLine('Cool-down','300 m','very easy','continuous','RPE 1–2','mobilitas bahu') ]},
+      {title:'Threshold Introduction',objective:'Membangun toleransi kerja aerobik tinggi',energy:'Aerobic threshold',warm:[setLine('Warm-up','500 m easy + 4 × 50 m drill','RPE 2–4','20 detik','progressive','teknik')],pre:[setLine('Pre-main','4 × 50 m build to threshold','controlled','30 detik','RPE 5–6','prepare lactate')],main:[setLine('Main set',`${Math.max(4,Math.round(volume*.28/100))} × 100 m`,threshold,'20–30 detik','RPE 6–7','hold pace ±3%')],recovery:[setLine('Recovery','4 × 50 m','easy','20 detik','RPE 2','flush')],cool:[setLine('Cool-down','200 m','very easy','continuous','RPE 1–2','breathing reset') ]}
+    ],
+    1:[
+      {title:'Aerobic Power',objective:'Menaikkan power aerobik dan repeatability',energy:'Aerobic power',warm:[setLine('Warm-up','500 m easy + 6 × 50 m build','RPE 2–4','15 detik','progressive','last 2 at threshold')],pre:[setLine('Pre-main','4 × 50 m at threshold','controlled','30 detik','RPE 6','prepare main')],main:[setLine('Main set',`${Math.max(5,Math.round(volume*.35/100))} × 100 m`,threshold,'20–40 detik','RPE 7','pace consistent')],recovery:[setLine('Recovery','6 × 50 m','easy','20 detik','RPE 2–3','active recovery')],cool:[setLine('Cool-down','300 m','very easy','continuous','RPE 1–2','relax') ]},
+      {title:'Race Pace Development',objective:'Menghubungkan PB dengan pace lomba berulang',energy:energy.primary,warm:[setLine('Warm-up','600 m easy + 4 × 50 m build','RPE 2–4','20 detik','progressive','quality bodyline')],pre:[setLine('Pre-main','4 × 25 m race build','race feel','45 detik','RPE 6','start and breakout')],main:[setLine('Main set',`3 blok × ${base.race.match(/50/) ? 4 : 3} × ${pool} m`,racePace,energy.rest,energy.rpe,'hold race mechanics; 5:00 between blocks')],recovery:[setLine('Recovery','4 × 50 m','easy','30 detik','RPE 2','full breathing reset')],cool:[setLine('Cool-down','300 m','very easy','continuous','RPE 1–2','flush') ]},
+      {title:'Lactate / Speed Endurance',objective:'Meningkatkan toleransi laktat sesuai nomor',energy:'Glycolytic',warm:[setLine('Warm-up','600 m easy + 6 × 50 m build','RPE 2–5','20 detik','progressive','last 2 fast')],pre:[setLine('Pre-main','6 × 25 m fast but relaxed','technical speed','45 detik','RPE 6–7','do not strain')],main:[setLine('Main set',`3–4 × ${dFromRace(base.race)<=200?50:100} m`,quality,'2:00–3:00','RPE 8–9','quality over quantity')],recovery:[setLine('Recovery','8 × 50 m','easy','30 detik','RPE 2–3','until breathing normal')],cool:[setLine('Cool-down','400 m','very easy','continuous','RPE 1–2','complete recovery') ]}
+    ],
+    2:[
+      {title:'Race Specific Pace',objective:'Spesifisitas pace, start, turn, finish',energy:energy.primary,warm:[setLine('Warm-up','600 m easy + 4 × 50 m build','RPE 2–4','20 detik','progressive','race preparation')],pre:[setLine('Pre-main','6 × 25 m start/turn/finish','technical','60 detik','RPE 6','full quality')],main:[setLine('Main set',`2–3 × broken ${race}` ,racePace,'3:00–5:00','RPE 8–9','record split and technique')],recovery:[setLine('Recovery','6 × 50 m','easy','30 detik','RPE 2','until quality returns')],cool:[setLine('Cool-down','300–400 m','very easy','continuous','RPE 1–2','mobility after water') ]},
+      {title:'Competition Simulation',objective:'Menguji pacing dan kesiapan lomba',energy:'Mixed event system',warm:[setLine('Warm-up','800 m including 4 × 50 m build','RPE 2–5','20 detik','progressive','race routine')],pre:[setLine('Pre-main','4 × 25 m race activation','fast relaxed','60 detik','RPE 6','neural priming')],main:[setLine('Main set',`2 × ${race} broken + 1 × ${race} controlled`,racePace,'5:00–8:00','RPE 8–9','simulate race protocol')],recovery:[setLine('Recovery','400 m','easy','continuous','RPE 2','full reset')],cool:[setLine('Cool-down','300 m','very easy','continuous','RPE 1–2','down-regulate') ]},
+      {title:'Recovery + Technical Quality',objective:'Mempertahankan teknik saat fatigue turun',energy:'Recovery oxidative',warm:[setLine('Warm-up','400 m easy','RPE 2','20 detik','easy','relaxed')],pre:[setLine('Pre-main','8 × 25 m drill','technical','20 detik','RPE 3','precision')],main:[setLine('Main set',`${Math.max(6,Math.round(volume*.25/pool))} × ${pool}`,easy,'15–20 detik','RPE 3–4','smooth')],recovery:[setLine('Recovery','4 × 50 m','very easy','20 detik','RPE 2','nasal breathing where possible')],cool:[setLine('Cool-down','200 m','very easy','continuous','RPE 1','stretch after') ]}
+    ],
+    3:[
+      {title:'Taper Quality',objective:'Menurunkan volume sambil mempertahankan neural speed',energy:'ATP-PC + race pace',warm:[setLine('Warm-up','400 m easy + 4 × 50 m build','RPE 2–4','20 detik','progressive','no fatigue')],pre:[setLine('Pre-main','4 × 25 m activation','fast relaxed','60–90 detik','RPE 5–6','full recovery')],main:[setLine('Main set','4–6 × 25 m race pace',quality,'2:00','RPE 7–8','stop fresh')],recovery:[setLine('Recovery','4 × 50 m','easy','30 detik','RPE 2','relax')],cool:[setLine('Cool-down','200 m','very easy','continuous','RPE 1–2','finish fresh') ]},
+      {title:'Pre-Race Primer',objective:'Membangun rasa air dan keyakinan tanpa fatigue',energy:'Alactic / neuromuscular',warm:[setLine('Warm-up','300 m easy + 4 × 25 m build','RPE 2–4','20 detik','progressive','short')],pre:[setLine('Pre-main','4 × 15 m breakout','sharp','90 detik','RPE 5','full rest')],main:[setLine('Main set','2–4 × 25 m race pace',racePace,'2:00–3:00','RPE 7','quality only')],recovery:[setLine('Recovery','4 × 50 m','easy','30 detik','RPE 2','reset')],cool:[setLine('Cool-down','200 m','very easy','continuous','RPE 1','leave pool fresh') ]},
+      {title:'Regeneration',objective:'Recovery aktif dan kesiapan lomba',energy:'Recovery oxidative',warm:[setLine('Warm-up','300 m easy','RPE 1–2','20 detik','easy','relax')],pre:[setLine('Pre-main','6 × 25 m drill','technical','20 detik','RPE 2–3','low stress')],main:[setLine('Main set','800–1200 m continuous easy','conversation pace','as needed','RPE 2–3','no lactate')],recovery:[setLine('Recovery','4 × 50 m','very easy','20 detik','RPE 1–2','relax')],cool:[setLine('Cool-down','200 m','very easy','continuous','RPE 1','finish calm') ]}
+    ]
+  };
+  const list=templates[phaseIndex]||templates[0],t=list[sessionIndex%list.length];
+  return{title:`Sesi ${String.fromCharCode(65+sessionIndex)} — ${t.title}`,objective:t.objective,energy:t.energy,warmUp:t.warm,preMain:t.pre,mainSet:t.main,recovery:t.recovery,coolDown:t.cool,week,phase:phaseIndex,volume,coachNote:phaseIndex===3?'Jaga kualitas dan keluar dari kolam dengan rasa segar; jangan menambah volume.':'Hentikan set utama bila pace turun >5%, teknik rusak, atau RPE melewati target.'};
+}
+function dFromRace(r){const m=String(r||'').match(/(\d+)\s*m/i);return m?Number(m[1]):200}
+window.pbPeriodizationForStudent=function(s,race,competitionDate,weeks){const base=pbProgramForStudent(s,race);if(!base)return null;const energy=energyModelForRaceProfessional(race),total=Math.max(4,Math.min(24,Number(weeks)||12)),comp=new Date((competitionDate||nowISO())+'T00:00:00'),days=Math.max(28,Math.ceil((comp-new Date())/86400000)),actual=Math.min(total,Math.max(4,Math.ceil(days/7))),plan=[];for(let w=1;w<=actual;w++){const phase=w<=Math.ceil(actual*.35)?0:w<=Math.ceil(actual*.72)?1:w<actual?2:3,phaseNames=['General Preparation','Specific Preparation','Pre-Competition','Taper / Peak'],phaseFocus=['Aerobic base, teknik, dan kapasitas kerja','Peningkatan pace, threshold, dan repeatability','Spesifisitas lomba, lactate management, start/turn/finish','Volume turun 40–60%, kualitas dan freshness naik'][phase],baseVol=Math.max(1200,Math.round((Number(base.volume)||2400)*(phase===3?.58:1+(w-1)/Math.max(1,actual)*.12))),sessions=[0,1,2].map(i=>completeSessionForPB(base,energy,phase,i,w,baseVol));plan.push({week:w,phase:phaseNames[phase],focus:phaseFocus,volume:Math.round(baseVol*(phase===3?.6:1)),intensity:phase===0?'70–82% PB / RPE 3–6':phase===1?'82–92% PB / RPE 5–8':phase===2?'90–98% PB / RPE 7–9':'95–100% PB touch / RPE 6–8',deload:phase===3||w%4===0,sessions})}return{student:s,race:base.race,pb:base.pb,pbSeconds:base.pbSeconds,competitionDate,weeks:actual,energy,plan}}
+window.updatePBPeriodPreview=function(){const s=student(val('mPBPstudent')),p=s&&pbPeriodizationForStudent(s,val('mPBRace'),val('mPBCompetition'),val('mPBWeeks')),el=document.getElementById('pbPeriodPreview');if(!el)return;el.innerHTML=p?`<div class="program-plan-card"><h4>${esc(p.student.name)} • ${esc(p.race)}</h4><p>PB ${esc(p.pb)} • ${p.weeks} minggu • Puncak ${fmtDate(p.competitionDate)} • ${esc(p.energy.eventClass)} • ${esc(p.energy.primary)}</p>${p.plan.slice(0,2).map(x=>`<div class="program-preview-item"><b>Minggu ${x.week} — ${esc(x.phase)} ${x.deload?'• deload':''}</b><span>${esc(x.focus)} • ${x.volume} m • ${esc(x.intensity)}</span><small>${x.sessions.map(z=>`${esc(z.title)}: warm-up ${z.warmUp[0].dose}; main ${z.mainSet[0].dose}; rest ${z.mainSet[0].rest}`).join(' | ')}</small></div>`).join('')}${p.plan.length>2?'<div class="small muted">Seluruh minggu dan struktur sesi lengkap tersedia pada cetakan A4.</div>':''}</div>`:'<div class="hint">Pilih siswa dengan PB, nomor lomba, tanggal kompetisi, dan durasi program.</div>'}
+window.printPBPeriodization=function(){const s=student(val('mPBPstudent')),p=s&&pbPeriodizationForStudent(s,val('mPBRace'),val('mPBCompetition'),val('mPBWeeks'));if(!p)return toast('Lengkapi data program dan pastikan PB tersedia.','error');const section=x=>`<section class="box"><h2>Minggu ${x.week} — ${esc(x.phase)} ${x.deload?'(Deload / Peak)':''}</h2><p><b>Fokus:</b> ${esc(x.focus)} • <b>Volume:</b> ${x.volume} m • <b>Intensitas:</b> ${esc(x.intensity)}</p>${x.sessions.map(z=>`<div style="border-top:1px solid #d8e5eb;padding:8px 0;break-inside:avoid"><h3>${esc(z.title)}</h3><p><b>Tujuan:</b> ${esc(z.objective)} • <b>Sistem energi:</b> ${esc(z.energy)}</p><ol>${[['Warm-up',z.warmUp],['Pre-main set',z.preMain],['Main set',z.mainSet],['Recovery / skill',z.recovery],['Cool-down',z.coolDown]].map(([label,arr])=>`<li><b>${label}:</b> ${arr.map(a=>`${esc(a.dose)}; target ${esc(a.target)}; rest ${esc(a.rest)}; ${esc(a.intensity)}; ${esc(a.note)}`).join(' | ')}</li>`).join('')}</ol><p class="muted"><b>Catatan pelatih:</b> ${esc(z.coachNote)}</p></div>`).join('')}</section>`;const content=`<div class="box"><b>Atlet:</b> ${esc(s.name)} • ${esc(s.class)}<br><b>Nomor:</b> ${esc(p.race)} • <b>PB:</b> ${esc(p.pb)} • <b>Kompetisi:</b> ${fmtDate(p.competitionDate)} • <b>Durasi:</b> ${p.weeks} minggu<br><b>Profil energi:</b> ${esc(p.energy.eventClass)} — ${esc(p.energy.primary)}; rest utama ${esc(p.energy.rest)}.</div>${p.plan.map(section).join('')}<p class="muted">Program ini menggabungkan zona biophysical, periodisasi, dan kebutuhan sistem energi. Pelatih wajib menyesuaikan usia, pengalaman, kesehatan, jumlah sesi, kualitas teknik, RPE, dan respons pemulihan atlet. Ini bukan diagnosis medis.</p>`;openPrint(`Program PB Profesional — ${s.name}`,content);closeModal()}
+</script>
