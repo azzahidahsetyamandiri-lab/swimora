@@ -34696,7 +34696,25 @@ var QRCode = (() => {
   return require_browser();
 })();
 
+</script><script>
+/* QR COMPATIBILITY SHIM: supports legacy new QRCode(...) and modern QRCode.toCanvas */
+(function(){
+  if(!window.QRCode || !window.QRCode.toCanvas) return;
+  const core=window.QRCode;
+  function QRCodeCompat(el,opts){
+    opts=opts||{};
+    const text=opts.text||opts.data||'';
+    core.toCanvas(el,text,{width:opts.width||180,margin:opts.margin??1,color:{dark:opts.colorDark||'#071a2d',light:opts.colorLight||'#ffffff'}},function(){});
+  }
+  QRCodeCompat.toCanvas=core.toCanvas;
+  QRCodeCompat.toDataURL=core.toDataURL;
+  QRCodeCompat.toString=core.toString;
+  QRCodeCompat.create=core.create;
+  QRCodeCompat.CorrectLevel={L:1,M:0,Q:3,H:2};
+  window.QRCode=QRCodeCompat;
+})();
 </script>
+
 </head>
 <body>
 <div id="toastWrap" class="toast-wrap"></div>
@@ -36758,4 +36776,32 @@ window.openA4StudentCards=function(list,title){
  toast('ID card siap dicetak dengan warna dan QR yang sama seperti tampilan aplikasi. Pilih Save as PDF.');
 };
 })();
+</script>
+
+<script>
+/* FINAL FIX: visible parent QR and differentiated report rubrics */
+(function(){
+  const oldEnterApp=window.enterApp;
+  function parentQrPayload(s){return 'SWIMORA|ABSEN|'+String(s?.id||s?.memberCode||s?.qrCode||'')+'|'+String(s?.name||'')}
+  function renderParentQR(){
+    if(currentRole!=='parent')return;
+    const s=student(currentParentStudentId)||db.students.find(x=>phoneMatches(x.phone||x.parentPhone||x.parent_phone,currentParentPhone));
+    if(!s)return;
+    let card=document.getElementById('parentQrCard');
+    if(!card){card=document.createElement('section');card.id='parentQrCard';card.className='card parent-qr-card';document.querySelector('.main')?.prepend(card)}
+    card.innerHTML='<div class="parent-qr-copy"><span class="eyebrow">KARTU ABSENSI DIGITAL</span><h2>QR '+esc(s.name||'Siswa')+'</h2><p>Tunjukkan QR ini kepada admin untuk absensi. Kode siswa: <b>'+esc(s.id||'-')+'</b></p><button class="btn btn-outline btn-sm" type="button" onclick="printParentQR()">Cetak QR</button></div><div class="parent-qr-box"><canvas id="parentQrCanvas" width="180" height="180"></canvas><small>SCAN UNTUK ABSENSI</small></div>';
+    try{QRCode.toCanvas(document.getElementById('parentQrCanvas'),parentQrPayload(s),{width:180,margin:2,color:{dark:'#071a2d',light:'#ffffff'}},function(){})}catch(e){const c=document.getElementById('parentQrCanvas');const ctx=c?.getContext('2d');if(ctx){ctx.fillStyle='#071a2d';ctx.fillRect(0,0,180,180);ctx.fillStyle='#fff';ctx.font='bold 12px Arial';ctx.fillText(String(s.id||'QR'),62,92)}}
+  }
+  window.enterApp=function(mode){const r=oldEnterApp?.apply(this,arguments);setTimeout(renderParentQR,180);return r};
+  window.printParentQR=function(){const s=student(currentParentStudentId);if(!s)return toast('Data siswa belum tersedia.','error');const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser.','error');const code=parentQrPayload(s);w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>QR Absensi '+esc(s.name)+'</title><style>@page{size:58mm 80mm;margin:0}body{margin:0;width:58mm;height:80mm;display:grid;place-items:center;font-family:Arial;text-align:center;color:#071a2d}.wrap{padding:6mm}.wrap h2{font-size:15px;margin:3mm 0}.wrap p{font-size:9px;margin:2mm}.qr{width:48mm;height:48mm}</style></head><body><div class="wrap"><b>SWIMORA</b><h2>'+esc(s.name)+'</h2><canvas class="qr" id="q"></canvas><p>'+esc(s.id||'')+'</p></div><script>'+String(window.__printQRBundle||'')+'<\\/script><script>window.onload=function(){if(window.QRCode)QRCode.toCanvas(document.getElementById("q"),'+JSON.stringify(code)+',{width:180,margin:2},function(){window.print()})}<\\/script></body></html>');w.document.close()};
+  const profiles={
+    'Pemula A':{desc:'Adaptasi air dan penguasaan dasar gaya dada serta bebas.',labels:{water:'Adaptasi & keselamatan air',breath:'Kontrol napas dasar',stream:'Mengapung dan meluncur',free:'Koordinasi dasar bebas',back:'Pengenalan punggung',breast:'Dasar tendangan/tarikan dada',fly:'Belum menjadi indikator utama',start:'Masuk air aman',turn:'Berhenti dan berbalik aman',endurance:'Menyelesaikan jarak dasar',speed:'Kontrol gerak, bukan waktu',disc:'Mengikuti instruksi',attitude:'Keberanian belajar'}},
+    'Pemula B':{desc:'Stabilisasi dada/bebas dan pengembangan punggung serta dasar kupu-kupu.',labels:{water:'Kemandirian di air',breath:'Napas dada dan bebas',stream:'Streamline dan posisi tubuh',free:'Koordinasi bebas',back:'Koordinasi punggung',breast:'Koordinasi dada',fly:'Dasar ritme kupu-kupu',start:'Start dari dinding',turn:'Pembalikan dasar',endurance:'Menyelesaikan set',speed:'Kontrol tempo',disc:'Kehadiran dan disiplin',attitude:'Kepercayaan diri'}},
+    Intermediate:{desc:'Empat gaya, teknik kompetisi dasar, kapasitas latihan, dan PB menuju limit KU.',labels:{water:'Efisiensi air empat gaya',breath:'Pola napas empat gaya',stream:'Underwater dan breakout',free:'Teknik/pace bebas',back:'Teknik/pace punggung',breast:'Teknik/pace dada',fly:'Teknik/pace kupu-kupu',start:'Start kompetisi',turn:'Turn dan finish',endurance:'Daya tahan aerobik',speed:'Jarak terhadap limit PB KU',disc:'Kehadiran dan disiplin',attitude:'Fokus kompetisi'}},
+    Prestasi:{desc:'Kinerja kompetisi: PB, race pace, strategi, start, turn, recovery, dan kesiapan lomba.',labels:{water:'Efisiensi dan ekonomi renang',breath:'Napas pada race pace',stream:'Underwater distance',free:'Race pace bebas',back:'Race pace punggung',breast:'Race pace dada',fly:'Race pace kupu-kupu',start:'Reaction/start',turn:'Turn, breakout, finish',endurance:'Repeatability dan toleransi laktat',speed:'PB dan race strategy',disc:'Kepatuhan program/recovery',attitude:'Mental dan kesiapan kompetisi'}}
+  };
+  window.reportClassProfile=function(s){const raw=String(s?.class||'').toLowerCase();const key=raw.includes('prestasi')?'Prestasi':raw.includes('intermediate')?'Intermediate':raw.includes('pemula b')?'Pemula B':'Pemula A';const p=profiles[key];return{label:key,desc:p.desc,fields:{water:p.labels.water,breath:p.labels.breath,stream:p.labels.stream,free:p.labels.free,back:p.labels.back,breast:p.labels.breast,fly:p.labels.fly,start:p.labels.start,turn:p.labels.turn,endurance:p.labels.endurance,speed:p.labels.speed,disc:p.labels.disc,att:p.labels.attitude}}};
+  const st=document.createElement('style');st.textContent='.parent-qr-card{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:20px 24px;margin-bottom:16px;background:linear-gradient(135deg,#061827,#0a6d9c);color:#fff;border:0}.parent-qr-copy{flex:1}.parent-qr-copy .eyebrow{font-size:10px;letter-spacing:1px;color:#baff32;font-weight:900}.parent-qr-copy h2{margin:7px 0;font-size:22px}.parent-qr-copy p{color:rgba(255,255,255,.72);font-size:12px;line-height:1.6}.parent-qr-box{background:#fff;color:#071a2d;border-radius:14px;padding:10px;text-align:center;min-width:204px}.parent-qr-box canvas{display:block;margin:auto;width:180px;height:180px}.parent-qr-box small{font-weight:900;font-size:9px;letter-spacing:1px}.report-profile-note{border:1px solid #b8e6d0;background:#f0fcf6;color:#175b3a;padding:12px 14px;border-radius:12px;margin-bottom:12px;font-size:12px;line-height:1.55}@media(max-width:700px){.parent-qr-card{align-items:flex-start;flex-direction:column}.parent-qr-box{align-self:center}}';document.head.appendChild(st);
+})();
+
 </script>
