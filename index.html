@@ -40696,3 +40696,81 @@ var JsBarcode = (() => {
 })();
 
 </script>
+
+<script>
+/* SWIMORA FINAL CONSOLIDATED PATCH — 2026-09-18 */
+(function(){
+  'use strict';
+  const escF=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const codeF=s=>String(s?.barcode||s?.qrCode||s?.memberCode||s?.id||'').trim();
+  const phoneF=v=>String(v||'').replace(/\D/g,'');
+  const currentDate=()=>document.getElementById('attendanceCalendar')?.value||nowISO();
+
+  /* 1. Setiap siswa selalu mempunyai kode stabil yang dipakai QR/barcode dan scanner. */
+  function ensureStudentCodes(){
+    (db.students||[]).forEach(s=>{if(!s.barcode)s.barcode=String(s.id||'').trim();if(!s.qrCode)s.qrCode=s.barcode;});
+  }
+  const oldRenderAll=window.renderAll;
+  window.renderAll=function(){ensureStudentCodes();return oldRenderAll?.apply(this,arguments)};
+  ensureStudentCodes();
+
+  /* 2. Dua pilihan absensi yang jelas: manual dan barcode. */
+  function mountAttendanceModes(){
+    const view=document.getElementById('view-attendance');
+    if(!view||document.getElementById('attendanceModeOptions'))return;
+    const box=document.createElement('div');box.id='attendanceModeOptions';box.className='card attendance-mode-options';
+    box.innerHTML='<div><b>Metode Absensi</b><span class="muted small">Pilih metode pencatatan kehadiran atlet.</span></div><div class="attendance-mode-buttons"><button class="btn btn-outline" type="button" onclick="attendanceManualMode()">☑ Absensi Manual</button><button class="btn btn-primary" type="button" onclick="attendanceBarcodeMode()">▣ Absensi Barcode</button></div>';
+    view.prepend(box);
+  }
+  window.attendanceManualMode=function(){document.getElementById('attendanceManualSearch')?.focus();document.getElementById('attendanceModeOptions')?.scrollIntoView({behavior:'smooth',block:'start'});toast('Mode Absensi Manual aktif. Pilih tanggal lalu centang nama atlet.')};
+  window.attendanceBarcodeMode=function(){
+    const date=document.getElementById('attendanceCalendar')?.value||'';
+    if(!date||!attendanceDateReady){toast('Pilih tanggal dan klik “Cari / Tampilkan Absensi” terlebih dahulu.','error');document.getElementById('attendanceCalendar')?.focus();return;}
+    if(typeof openFullAttendanceScanner==='function')openFullAttendanceScanner();else if(typeof openScanner==='function')openScanner();
+  };
+  const oldRA=window.renderAttendance;
+  window.renderAttendance=function(){mountAttendanceModes();return oldRA?.apply(this,arguments)};
+  setTimeout(mountAttendanceModes,100);
+
+  /* 3. Kartu siswa: pakai QR kotak yang dapat dipindai, bukan hanya garis barcode. */
+  window.renderStudentCardBarcode=function(root,s){
+    if(!root||!s)return;let box=root.querySelector('.card-qr,.student-card-qr,.id-card-qr,.qr-box,[data-card-qr]');
+    if(!box){box=document.createElement('div');box.className='card-qr';root.appendChild(box)}
+    box.innerHTML='<canvas class="visible-card-qr" width="150" height="150" aria-label="QR absensi"></canvas><small>QR ABSENSI<br>'+escF(codeF(s))+'</small>';
+    try{if(window.QRCode?.toCanvas)QRCode.toCanvas(box.querySelector('canvas'),'SWIMORA|ABSEN|'+codeF(s),{width:150,margin:2,color:{dark:'#071a2d',light:'#fff'}},()=>{});}catch(e){}
+  };
+
+  /* 4. Hasil pendaftaran tenant: siapkan kredensial sementara dan kanal kirim.
+     RPC create_swimora_owner bersifat opsional; jika belum tersedia, sistem tetap membuat tenant
+     dan menghubungkan owner yang sudah ada, tanpa menyembunyikan informasi akses dari pengelola. */
+  window.openCreateTenantModal=function(){
+    openModal('Tambah Tenant SWIMORA',`<div class="sa-modal-grid"><div class="field full"><label>Nama Klub</label><input id="saTenantName" placeholder="Contoh: Dolphin Swimming Club"></div><div class="field"><label>Kode Klub</label><input id="saTenantCode" placeholder="DOLPHIN"></div><div class="field"><label>Slug</label><input id="saTenantSlug" placeholder="dolphin"></div><div class="field"><label>Biaya Pendaftaran</label><select id="saRegEnabled" onchange="document.getElementById('saRegFee').disabled=this.value!=='yes'"><option value="no">Tidak ada</option><option value="yes">Ada</option></select></div><div class="field"><label>Nominal</label><input id="saRegFee" type="number" min="0" step="1000" value="0" disabled></div><div class="field full"><label>Email Owner</label><input id="saOwnerEmail" type="email" placeholder="owner@klub.com" required></div><div class="field"><label>No. WhatsApp Owner</label><input id="saOwnerPhone" inputmode="tel" placeholder="08xxxxxxxxxx"></div><div class="field"><label>Password sementara</label><input id="saTempPassword" type="text" value="Swimora@2026" minlength="8"><small class="muted">Ganti dengan password unik sebelum dikirim.</small></div><div class="field full"><div class="hint">Setelah tenant dibuat, layar konfirmasi menyediakan tombol <b>Kirim Email</b> dan <b>Kirim WhatsApp</b> berisi email, password sementara, dan alamat login.</div></div></div>`,'Buat Tenant','createTenantFromModal()');
+  };
+  window.createTenantFromModal=async function(){
+    const client=getSupabaseClient(),name=val('saTenantName').trim(),code=val('saTenantCode').trim(),slug=val('saTenantSlug').trim(),enabled=val('saRegEnabled')==='yes',fee=Number(val('saRegFee')||0),owner=val('saOwnerEmail').trim(),phone=phoneF(val('saOwnerPhone')),temp=val('saTempPassword').trim();
+    if(!client)return toast('Koneksi Supabase belum tersedia.','error');if(!name||!code||!slug||!owner||temp.length<8)return toast('Nama, kode, slug, email owner, dan password minimal 8 karakter wajib diisi.','error');
+    try{
+      const {data,error}=await client.rpc('create_swimora_tenant',{p_name:name,p_code:code,p_slug:slug,p_registration_fee_enabled:enabled,p_registration_fee:fee});if(error)throw error;
+      const created=Array.isArray(data)?data[0]:data;let accountReady=false,notice='';
+      if(created?.tenant_no){
+        const ownerRpc=await client.rpc('create_swimora_owner',{p_tenant_no:created.tenant_no,p_email:owner,p_password:temp,p_role:'owner'});
+        if(!ownerRpc.error)accountReady=true;else{const link=await client.rpc('assign_swimora_tenant_member',{p_tenant_no:created.tenant_no,p_email:owner,p_role:'owner',p_is_active:true});if(link.error)notice='Akun belum otomatis dibuat; owner perlu dibuat di Supabase Authentication lalu dihubungkan ke tenant.';else notice='Owner terhubung, tetapi password harus diatur melalui Authentication.';}
+      }
+      const loginUrl=location.href.split('?')[0],text=`Halo, akses admin klub ${name} di SWIMORA sudah tersedia.\nEmail: ${owner}\nPassword sementara: ${temp}\nLogin: ${loginUrl}\nSegera ganti password setelah login.`;
+      const wa=phone?`https://wa.me/${phone.replace(/^0/,'62')}?text=${encodeURIComponent(text)}`:'#';
+      const mail=`mailto:${encodeURIComponent(owner)}?subject=${encodeURIComponent('Akses admin '+name+' — SWIMORA')}&body=${encodeURIComponent(text)}`;
+      closeModal();openModal('Tenant Berhasil Dibuat',`<div class="credential-result"><div class="success-icon">✓</div><h3>${escF(name)}</h3><p>${accountReady?'Akun owner berhasil dibuat dan siap login.':'Tenant sudah dibuat. '+escF(notice)}</p><div class="credential-box"><b>Email</b><code>${escF(owner)}</code><b>Password sementara</b><code>${escF(temp)}</code><b>Alamat login</b><code>${escF(loginUrl)}</code></div><div class="row-actions"><a class="btn btn-primary" href="${escF(mail)}">✉ Kirim Email</a>${phone?`<a class="btn btn-cyan" target="_blank" href="${escF(wa)}">☏ Kirim WhatsApp</a>`:''}<button class="btn btn-outline" type="button" onclick="navigator.clipboard?.writeText(${JSON.stringify(text)});toast('Kredensial disalin.')">Salin Pesan</button></div><small class="muted">Demi keamanan, minta owner mengganti password setelah login pertama.</small></div>`,'Tutup','closeModal()');
+      await refreshSuperAdminDashboard();
+    }catch(err){toast('Gagal membuat tenant: '+(err?.message||err),'error')}
+  };
+
+  /* 5. Dosis latihan konservatif dan dibatasi untuk anak; nilai adalah volume mingguan. */
+  window.classVolumeProfile=function(s){const c=String(s?.class||'').toLowerCase();if(c.includes('prestasi'))return{label:'Prestasi',start:1800,max:4200};if(c.includes('intermediate'))return{label:'Intermediate',start:1200,max:3000};if(c.includes('pemula b'))return{label:'Pemula B',start:600,max:1800};return{label:'Pemula A',start:300,max:1200}};
+  if(typeof classVolumeProfile==='function')classVolumeProfile=window.classVolumeProfile;
+  const oldPB=window.pbPeriodizationForStudent;
+  if(oldPB)window.pbPeriodizationForStudent=function(){const plan=oldPB.apply(this,arguments);if(plan?.volumeProfile){plan.volumeProfile.max=Math.min(plan.volumeProfile.max,4200);plan.plan?.forEach(w=>{w.volume=Math.min(Number(w.volume)||0,plan.volumeProfile.max);w.sessions?.forEach(s=>{s.volume=Math.min(Number(s.volume)||0,Math.ceil(plan.volumeProfile.max/(plan.sessionsPerWeek||3)))})})}return plan};
+
+  const st=document.createElement('style');st.textContent='.attendance-mode-options{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px;padding:15px 18px;border:1px solid #cfe1ea;background:#f8fcfe}.attendance-mode-options>div:first-child{display:flex;flex-direction:column;gap:4px}.attendance-mode-buttons{display:flex;gap:8px;flex-wrap:wrap}.credential-result{padding:6px 0}.credential-box{display:grid;grid-template-columns:150px 1fr;gap:8px;padding:14px;margin:14px 0;border:1px solid #d7e6ed;border-radius:12px;background:#f7fbfd}.credential-box code{padding:6px 8px;background:#fff;border-radius:7px;word-break:break-all}@media(max-width:680px){.attendance-mode-options{align-items:flex-start;flex-direction:column}.credential-box{grid-template-columns:1fr}}';document.head.appendChild(st);
+})();
+</script>
+
