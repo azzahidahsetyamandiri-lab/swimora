@@ -40774,3 +40774,109 @@ var JsBarcode = (() => {
 })();
 </script>
 
+<script>
+/* ABSENSI BARCODE REWRITE — replaces conflicting scanner overrides */
+(function(){
+  'use strict';
+  let scanStream=null, scanTimer=null, scanStudentId='';
+  const escA=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function selectedDate(){return document.getElementById('attendanceSelectedDate')?.value||''}
+  function stopCamera(){if(scanTimer){cancelAnimationFrame(scanTimer);scanTimer=null}if(scanStream){scanStream.getTracks?.().forEach(t=>t.stop());scanStream=null}const v=document.getElementById('barcodeCameraVideo');if(v)v.srcObject=null}
+  function findStudent(raw){
+    const value=String(raw||'').trim();let candidates=[value];
+    try{const u=new URL(value);candidates.push(u.searchParams.get('id'),u.searchParams.get('studentId'),u.searchParams.get('code'))}catch(e){}
+    try{const o=JSON.parse(value);candidates.push(o.id,o.studentId,o.memberCode,o.barcode,o.qrCode,o.code)}catch(e){}
+    candidates=candidates.filter(Boolean).map(x=>String(x).trim().toUpperCase());
+    return (db.students||[]).find(s=>[s.id,s.memberCode,s.barcode,s.qrCode,s.studentCode].filter(Boolean).some(k=>candidates.includes(String(k).trim().toUpperCase())))||null;
+  }
+  function setResult(html){const el=document.getElementById('barcodeScanResult');if(el)el.innerHTML=html}
+  function setStatus(text,error=false){const el=document.getElementById('barcodeScanStatus');if(el){el.textContent=text;el.classList.toggle('barcode-error',error)}}
+  function showConfirm(s){scanStudentId=s.id;stopCamera();setResult('<strong>Atlet ditemukan</strong><span>'+escA(s.name)+' • '+escA(s.id)+'</span><b class="barcode-confirm-question">Klik “Konfirmasi Absen” untuk menyimpan kehadiran.</b>');setStatus('Barcode terbaca. Periksa nama atlet lalu konfirmasi.');document.getElementById('barcodeConfirmBtn')?.removeAttribute('hidden');document.getElementById('barcodeCancelBtn')?.removeAttribute('hidden')}
+  async function startCamera(){
+    const video=document.getElementById('barcodeCameraVideo');if(!video)return;
+    try{
+      if(!navigator.mediaDevices?.getUserMedia)throw new Error('Browser tidak menyediakan akses kamera');
+      scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});video.srcObject=scanStream;await video.play();setStatus('Kamera aktif. Arahkan barcode ke dalam kotak.');
+      if('BarcodeDetector' in window){
+        let detector;try{detector=new BarcodeDetector({formats:['qr_code','code_128','code_39','code_93','ean_13','ean_8','upc_a']})}catch(e){detector=new BarcodeDetector()}
+        const loop=async()=>{if(!document.getElementById('barcodeCameraVideo')||scanStudentId)return;try{const hits=await detector.detect(video);const raw=hits?.[0]?.rawValue;if(raw){const s=findStudent(raw);if(s)showConfirm(s);else{setStatus('Kode terbaca, tetapi tidak cocok dengan data atlet.',true);setResult('<span>Kode: '+escA(raw)+'</span>')}}}catch(e){}if(!scanStudentId)scanTimer=requestAnimationFrame(loop)};scanTimer=requestAnimationFrame(loop);return;
+      }
+      setStatus('Scanner otomatis tidak didukung browser ini. Gunakan tombol Input ID.',true);
+    }catch(e){setStatus('Kamera gagal dibuka: '+(e.message||'izin ditolak')+'. Pastikan HTTPS dan izin kamera aktif.',true)}
+  }
+  function openBarcode(){
+    const date=selectedDate();if(!date){toast('Pilih tanggal lalu klik “Cari / Tampilkan Absensi” terlebih dahulu.','error');return}
+    scanStudentId='';openModal('Absensi Barcode',`<div class="barcode-modal"><div class="barcode-date">Tanggal absensi: <b>${escA(fmtDate(date))}</b></div><div class="barcode-camera-wrap"><video id="barcodeCameraVideo" autoplay playsinline muted></video><div class="barcode-overlay"></div><div class="barcode-focus"><i></i><i></i><i></i><i></i><span>Letakkan QR / barcode di sini</span></div></div><div id="barcodeScanStatus" class="barcode-status">Menyiapkan kamera...</div><div id="barcodeScanResult" class="barcode-result"><span>Kamera akan mendeteksi kode secara otomatis.</span></div><div class="barcode-actions"><button id="barcodeCancelBtn" class="btn btn-outline" type="button" onclick="cancelBarcodeAttendance()">Batal</button><button id="barcodeConfirmBtn" class="btn btn-primary" type="button" hidden onclick="confirmBarcodeAttendance()">✓ Konfirmasi Absen</button></div></div>`,'','');startCamera()
+  }
+  window.cancelBarcodeAttendance=function(){scanStudentId='';stopCamera();closeModal()};
+  window.confirmBarcodeAttendance=async function(){
+    const date=selectedDate(),s=(db.students||[]).find(x=>String(x.id)===String(scanStudentId));if(!date||!s)return toast('Data tanggal atau atlet belum tersedia.','error');
+    if(attendanceFor(s.id,date)){setStatus('Atlet sudah absen pada tanggal ini.',true);return toast(s.name+' sudah absen pada '+fmtDate(date)+'.','error')}
+    const time=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}).replace('.',':');db.attendance.push({id:uid('ATT'),date,time,studentId:s.id,method:'Barcode',status:'Hadir'});syncSessionRemaining(s);saveDB();scheduleCloudStateSave?.();generateSystemNotifications?.(false);renderAll();toast('Absensi '+s.name+' berhasil disimpan.');scanStudentId='';stopCamera();closeModal()
+  };
+  window.openScanner=openBarcode;window.openFullAttendanceScanner=openBarcode;window.attendanceBarcodeMode=openBarcode;
+  function mountBarcodeChoices(){
+    const panel=document.querySelector('#view-attendance .scan-box');if(!panel||panel.dataset.rewritten)return;panel.dataset.rewritten='1';panel.innerHTML='<div class="scan-box-rewrite"><div class="scan-ring">▣</div><h3>Metode Absensi</h3><p>Pilih cara absensi. Absensi barcode akan meminta tanggal, membuka kamera, membaca kode di kotak fokus, lalu menampilkan nama atlet sebelum disimpan.</p><div class="attendance-choice-grid"><button class="btn btn-outline" type="button" onclick="attendanceManualModeRewrite()">☑ Absensi Manual</button><button class="btn btn-primary" type="button" onclick="attendanceBarcodeMode()">▣ Absensi Barcode</button></div></div>';
+  }
+  window.attendanceManualModeRewrite=function(){document.getElementById('attendanceManualSearch')?.focus();document.getElementById('attendanceManualSearch')?.scrollIntoView({behavior:'smooth',block:'center'});toast('Mode Absensi Manual aktif. Centang atlet pada daftar manual.')};
+  const oldRender=window.renderAttendance;window.renderAttendance=function(){mountBarcodeChoices();return oldRender?.apply(this,arguments)};setInterval(mountBarcodeChoices,500);setTimeout(mountBarcodeChoices,50);
+  const style=document.createElement('style');style.textContent='.scan-box-rewrite{text-align:center}.scan-box-rewrite p{max-width:560px;margin:8px auto 16px}.attendance-choice-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:520px;margin:auto}.barcode-modal{margin:-18px;background:#07111d;color:#fff;min-height:100%;padding-bottom:14px}.barcode-date{padding:14px 18px;background:#0d2637;color:#dcebf4}.barcode-camera-wrap{position:relative;height:min(62vh,570px);min-height:320px;background:#02070b;overflow:hidden}.barcode-camera-wrap video{width:100%;height:100%;object-fit:cover}.barcode-overlay{position:absolute;inset:0;background:rgba(0,0,0,.45);pointer-events:none}.barcode-focus{position:absolute;left:50%;top:50%;width:min(78vw,360px);height:min(32vw,150px);transform:translate(-50%,-50%);border:2px solid rgba(185,255,48,.9);box-shadow:0 0 0 9999px rgba(0,0,0,.28),0 0 24px rgba(185,255,48,.7);border-radius:10px;text-align:center}.barcode-focus i{position:absolute;width:28px;height:28px;border-color:#baff30;border-style:solid}.barcode-focus i:nth-child(1){left:-3px;top:-3px;border-width:4px 0 0 4px}.barcode-focus i:nth-child(2){right:-3px;top:-3px;border-width:4px 4px 0 0}.barcode-focus i:nth-child(3){left:-3px;bottom:-3px;border-width:0 0 4px 4px}.barcode-focus i:nth-child(4){right:-3px;bottom:-3px;border-width:0 4px 4px 0}.barcode-focus span{position:absolute;left:0;right:0;top:calc(100% + 15px);color:#fff;font-size:12px;text-shadow:0 1px 4px #000}.barcode-status,.barcode-result{padding:12px 18px;background:#102130}.barcode-status{font-size:12px;color:#cfe2ed}.barcode-status.barcode-error{color:#ff9ca8}.barcode-result{min-height:70px;background:#0b1724}.barcode-result strong,.barcode-result span,.barcode-result b{display:block}.barcode-result strong{color:#baff30;font-size:18px}.barcode-result span{color:#d9e6ee;margin-top:3px}.barcode-confirm-question{margin-top:10px;color:#fff!important}.barcode-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;background:#fff}@media(max-width:600px){.attendance-choice-grid{grid-template-columns:1fr}.barcode-camera-wrap{height:55vh}}';document.head.appendChild(style);
+})();
+</script>
+
+<script>
+/* LOGICAL TRAINING VOLUME PATCH — values are pool lengths, not arbitrary hundreds */
+(function(){
+  'use strict';
+  const safeProfiles={
+    'Pemula A':[[4,4,8,4,2],[5,5,10,4,2],[6,6,12,5,3],[6,6,14,5,3]],
+    'Pemula B':[[5,5,10,5,3],[6,6,12,6,3],[7,7,14,6,3],[8,8,16,7,4]],
+    'Intermediate':[[7,7,16,6,4],[8,8,20,7,4],[9,9,24,8,4],[10,10,28,8,5]],
+    'Prestasi':[[8,8,20,6,4],[9,9,24,7,4],[10,10,28,8,5],[12,12,32,10,6]]
+  };
+  const classKey=c=>Object.keys(safeProfiles).find(k=>String(c||'').toLowerCase().includes(k.toLowerCase()))||'Pemula A';
+  window.programProfile=function(cls,phase){return safeProfiles[classKey(cls)][Math.max(0,Math.min(3,Number(phase||1)-1))].slice()};
+  const oldWidthMeters=window.widthMeters;
+  window.widthMeters=function(lengths){const pool=Math.max(1,Math.min(50,Number(db.settings?.poolLength||db.settings?.poolWidth||25)));return Math.round(Number(lengths||0)*pool)};
+  window.widthText=function(lengths){return `${window.widthMeters(lengths)} m`};
+  window.trainingVolumeLimit=function(cls){const k=classKey(cls);const max=k==='Pemula A'?1200:k==='Pemula B'?1600:k==='Intermediate'?2600:3600;return{max,label:k}};
+  const oldRenderPrograms=window.renderPrograms;
+  if(oldRenderPrograms)window.renderPrograms=function(){const r=oldRenderPrograms.apply(this,arguments);document.querySelectorAll('.program-volume,.volume-badge').forEach(el=>{const m=String(el.textContent).match(/([\d.]+)\s*m/i);if(m){const n=Number(m[1].replace('.',''));if(n>3600)el.textContent='Volume: 3.600 m (dibatasi untuk usia anak)'}});return r};
+  const style=document.createElement('style');style.textContent='.logical-volume-note{padding:10px 12px;border:1px solid #b9e4cf;background:#f1fcf6;border-radius:10px;color:#185d3b;font-size:12px;line-height:1.5;margin:8px 0}';document.head.appendChild(style);
+})();
+</script>
+
+<script>
+/* ATTENDANCE FINAL PATCH: ZXing-first scanner + A-Z manual roster */
+(function(){
+  'use strict';
+  let stream=null, controls=null, raf=0, pending='';
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const date=()=>document.getElementById('attendanceSelectedDate')?.value||'';
+  const stop=()=>{if(raf)cancelAnimationFrame(raf);raf=0;try{controls?.stop?.()}catch(e){}controls=null;if(stream){stream.getTracks?.().forEach(t=>t.stop());stream=null}const v=document.getElementById('afCamera');if(v)v.srcObject=null};
+  function match(raw){
+    let a=[String(raw||'').trim()];try{const u=new URL(raw);a.push(u.searchParams.get('id'),u.searchParams.get('studentId'),u.searchParams.get('code'))}catch(e){}try{const o=JSON.parse(raw);a.push(o.id,o.studentId,o.memberCode,o.barcode,o.qrCode,o.code)}catch(e){}a=a.filter(Boolean).map(x=>String(x).trim().toUpperCase());
+    return (db.students||[]).find(s=>[s.id,s.memberCode,s.barcode,s.qrCode,s.studentCode].filter(Boolean).some(k=>a.includes(String(k).trim().toUpperCase())));
+  }
+  function found(s){pending=s.id;stop();document.getElementById('afStatus').textContent='Barcode terbaca. Periksa nama lalu konfirmasi.';document.getElementById('afResult').innerHTML='<strong>'+esc(s.name)+'</strong><span>'+esc(s.id)+' • '+esc(s.class||'')+'</span><b>Tekan “Konfirmasi Absen” untuk menyimpan.</b>';document.getElementById('afConfirm').hidden=false}
+  async function openCamera(){
+    const v=document.getElementById('afCamera');if(!v)return;
+    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false});v.srcObject=stream;await v.play();document.getElementById('afStatus').textContent='Kamera aktif. Arahkan QR/barcode ke kotak fokus.';
+      let z=null;try{z=await loadZXing()}catch(e){}
+      if(z?.BrowserMultiFormatReader){const reader=new z.BrowserMultiFormatReader();controls=await reader.decodeFromVideoDevice(undefined,v,(res)=>{if(res&&!pending){const s=match(res.getText());if(s)found(s);else document.getElementById('afStatus').textContent='Kode terbaca, tetapi ID atlet tidak ditemukan.'}});return}
+      if('BarcodeDetector' in window){let d;try{d=new BarcodeDetector({formats:['qr_code','code_128','code_39','code_93','ean_13','ean_8','upc_a']})}catch(e){d=new BarcodeDetector()}const loop=async()=>{if(!document.getElementById('afCamera')||pending)return;try{const x=await d.detect(v),raw=x?.[0]?.rawValue;if(raw){const s=match(raw);if(s)found(s);else document.getElementById('afStatus').textContent='Kode terbaca, tetapi ID atlet tidak ditemukan.'}}catch(e){}if(!pending)raf=requestAnimationFrame(loop)};raf=requestAnimationFrame(loop);return}
+      document.getElementById('afStatus').textContent='Decoder kamera tidak tersedia. Gunakan Input ID di bawah.';
+    }catch(e){document.getElementById('afStatus').textContent='Kamera gagal dibuka: '+(e.message||'izin ditolak')+'. Gunakan Input ID.'}
+  }
+  window.openScanner=function(){const d=date();if(!d)return toast('Pilih tanggal lalu klik Cari / Tampilkan Absensi terlebih dahulu.','error');pending='';openModal('Absensi Barcode',`<div class="af-shell"><div class="af-date">Tanggal: <b>${esc(fmtDate(d))}</b></div><div class="af-stage"><video id="afCamera" autoplay playsinline muted></video><div class="af-dim"></div><div class="af-focus"><i></i><i></i><i></i><i></i><span>Arahkan QR / barcode ke sini</span></div></div><div id="afStatus" class="af-status">Menyiapkan kamera...</div><div id="afResult" class="af-result"><span>Menunggu barcode...</span></div><div class="af-input"><input id="afManualCode" placeholder="Fallback: ketik ID atlet, contoh TSC-001"><button class="btn btn-outline" type="button" onclick="attendanceLookupCode()">Cari ID</button></div><div class="af-actions"><button class="btn btn-outline" type="button" onclick="attendanceCancelScan()">Batal</button><button id="afConfirm" class="btn btn-primary" type="button" hidden onclick="attendanceConfirmScan()">✓ Konfirmasi Absen</button></div></div>`,'','');openCamera()};
+  window.openFullAttendanceScanner=window.openScanner;window.attendanceBarcodeMode=window.openScanner;
+  window.attendanceCancelScan=function(){pending='';stop();closeModal()};
+  window.attendanceLookupCode=function(){const s=match(document.getElementById('afManualCode')?.value);if(s)found(s);else document.getElementById('afStatus').textContent='ID atlet tidak ditemukan.'};
+  window.attendanceConfirmScan=function(){const d=date(),s=(db.students||[]).find(x=>String(x.id)===String(pending));if(!d||!s)return;if(attendanceFor(s.id,d))return toast(s.name+' sudah absen pada tanggal ini.','error');db.attendance.push({id:uid('ATT'),date:d,time:new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}).replace('.',':'),studentId:s.id,method:'Barcode',status:'Hadir'});syncSessionRemaining(s);saveDB();scheduleCloudStateSave?.();renderAll();toast('Absensi barcode '+s.name+' berhasil disimpan.');pending='';stop();closeModal()};
+  function sortRoster(){const q=(document.getElementById('attendanceManualSearch')?.value||'').trim().toLocaleLowerCase('id-ID'),c=document.getElementById('attendanceManualClass')?.value||'';return (db.students||[]).filter(s=>s.status==='Aktif'&&(!c||s.class===c)&&(!q||[s.name,s.id,s.school,s.parent,s.phone,s.class].some(v=>String(v||'').toLocaleLowerCase('id-ID').includes(q)))).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'id',{sensitivity:'base'}))}
+  window.renderManualAttendanceRoster=function(){const el=document.getElementById('manualAttendanceTable');if(!el)return;const d=selectedAttendanceDate(),pill=document.getElementById('manualAttendanceCount');if(!d){if(pill)pill.textContent='Tanggal belum dipilih';el.innerHTML='<tr><td colspan="9" class="text-center muted">Pilih tanggal terlebih dahulu.</td></tr>';return}const rows=sortRoster();if(pill)pill.textContent=db.attendance.filter(a=>a.date===d).length+' hadir • '+fmtDate(d);el.innerHTML=rows.map(s=>{const a=attendanceFor(s.id,d),st=getBillingStatus(s),p=getBillingPlan(s);return`<tr><td class="check-cell"><input class="att-check" type="checkbox" ${a?'checked':''} onchange="toggleManualAttendance('${esc(s.id)}',this.checked)"></td><td class="mono"><b>${esc(s.id)}</b></td><td><b>${esc(s.name)}</b><span class="school-label">${esc(s.parent||'')}</span></td><td>${esc(s.school||'-')}</td><td><span class="pill">${esc(s.class)}</span></td><td><b>${p.mode==='session'?st.used+'/'+st.quota:st.used+' hadir'}</b></td><td>${renderMeetingBadges(st.dates,st.showInvoice)}</td><td>${billingStatusHTML(s)}</td><td>${billingActionButtons(s)}</td></tr>`}).join('')||'<tr><td colspan="9" class="text-center muted">Siswa tidak ditemukan.</td></tr>'}
+  const oldRender=window.renderAttendance;window.renderAttendance=function(){const r=oldRender?.apply(this,arguments);setTimeout(()=>window.renderManualAttendanceRoster(),0);return r};
+  const css=document.createElement('style');css.textContent='.af-shell{margin:-18px;background:#07111d;color:#fff}.af-date{padding:13px 17px;background:#0e2b3b}.af-stage{height:min(62vh,580px);min-height:320px;position:relative;background:#000;overflow:hidden}.af-stage video{width:100%;height:100%;object-fit:cover}.af-dim{position:absolute;inset:0;background:rgba(0,0,0,.42)}.af-focus{position:absolute;left:50%;top:50%;width:min(78vw,370px);height:min(31vw,145px);transform:translate(-50%,-50%);border:2px solid #baff32;box-shadow:0 0 0 9999px rgba(0,0,0,.3),0 0 24px #baff32;border-radius:10px;text-align:center}.af-focus i{position:absolute;width:28px;height:28px;border-color:#baff32;border-style:solid}.af-focus i:nth-child(1){left:-3px;top:-3px;border-width:4px 0 0 4px}.af-focus i:nth-child(2){right:-3px;top:-3px;border-width:4px 4px 0 0}.af-focus i:nth-child(3){left:-3px;bottom:-3px;border-width:0 0 4px 4px}.af-focus i:nth-child(4){right:-3px;bottom:-3px;border-width:0 4px 4px 0}.af-focus span{position:absolute;top:calc(100% + 14px);left:0;right:0;font-size:12px;text-shadow:0 1px 5px #000}.af-status,.af-result{padding:11px 17px;background:#102334}.af-result{min-height:68px;background:#0b1724}.af-result strong,.af-result span,.af-result b{display:block}.af-result strong{font-size:18px;color:#baff32}.af-input{display:flex;gap:8px;padding:10px 17px;background:#fff}.af-input input{flex:1;min-width:0;border:1px solid #dce6ed;border-radius:9px;padding:9px}.af-actions{display:flex;justify-content:flex-end;gap:8px;padding:11px 17px;background:#fff}.attendance-mode-options+*{}.school-label{display:block}.roster-toolbar:before{content:"Urutan: A–Z • Cari nama, ID, sekolah, orang tua, atau nomor HP";display:block;width:100%;font-size:11px;color:#5c7483;margin-bottom:5px}@media(max-width:600px){.af-input{flex-direction:column}}';document.head.appendChild(css);
+})();
+</script>
+
