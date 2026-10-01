@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0A1F1B" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2215%22%20fill%3D%22%23071a2d%22%2F%3E%3Cpath%20d%3D%22M15%2024c8-7%2016%207%2034%200v8c-18%207-26-7-34%200zm0%2014c8-7%2016%207%2034%200v8c-18%207-26-7-34%200z%22%20fill%3D%22%23b8f13e%22%2F%3E%3C%2Fsvg%3E">
-  <title>SWIMORA V16.5 | Azzahidah Sport Management</title>
+  <title>SWIMORA V16.7 | Azzahidah Sport Management</title>
   <meta name="description" content="SWIMORA by Azzahidah Sport Management — platform manajemen klub olahraga. Workspace pertama: Trudgen Swimming Club." />
   
   
@@ -3580,7 +3580,23 @@ function getBillingStatus(s){const plan=getBillingPlan(s);if(plan.mode==='sessio
 function renderMeetingBadges(dates,alert=false){return dates?.length?`<div class="meeting-badges">${dates.map(d=>`<span class="meeting-badge ${alert?'alert':''}">${shortDate(d)}</span>`).join('')}</div>`:'<span class="table-note">Belum ada pertemuan.</span>'}
 function activeInvoiceForStudent(studentId,cycleKey=''){return db.invoices.find(i=>i.studentId===studentId&&i.status!=='Lunas'&&(!cycleKey||i.cycleKey===cycleKey))}
 function ensureInvoiceForStudent(studentId,source='attendance'){const s=student(studentId);if(!s)return null;const state=getBillingStatus(s),existing=activeInvoiceForStudent(s.id,state.cycleKey);if(existing)return existing;const period=state.mode==='session'?`${s.class} • ${state.quota} Pertemuan`:`${new Date(state.dueDate+'T00:00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'})}`;const invoice={id:`INV-${Date.now().toString().slice(-8)}`,studentId:s.id,period,due:state.dueDate||nowISO(),amount:state.fee,status:'Belum Lunas',source,cycleKey:state.cycleKey,attendanceIds:state.mode==='session'?state.atts.slice(0,state.quota).map(a=>a.id):[],paidOn:'',billingMode:state.mode,items:[{description:`Biaya latihan ${s.class}${s.class==='Pemula A'?' • 4x pertemuan/bulan':s.class==='Pemula B'?' • 8x pertemuan/bulan':' • bulanan'}`,amount:state.fee}]};db.invoices.unshift(invoice);scheduleCloudStateSave();return invoice}
-function whatsappInvoiceLink(studentId,invoiceId=''){const s=student(studentId);if(!s)return'#';const invoice=invoiceId?db.invoices.find(i=>i.id===invoiceId):ensureInvoiceForStudent(studentId,'whatsapp');if(!invoice)return'#';const phone=normalizePhone(s.phone).replace(/^0/,'62'),itemText=(invoice.items||[]).map(x=>`• ${x.description}: ${money(x.amount)}`).join('\n');const lines=[`Assalamu'alaikum Bapak/Ibu ${s.parent||'Orang Tua'},`,'',`Kami informasikan tagihan ${s.name} (${s.class}) di Trudgen Swimming Club.`,`Invoice: ${invoice.id}`,`Periode: ${invoice.period}`,itemText,`Jatuh tempo: ${fmtDate(invoice.due)}`,`Total: ${money(invoice.amount)}`,'','Mohon melakukan pembayaran sesuai ketentuan klub. Terima kasih.'];return`https://wa.me/${phone}?text=${encodeURIComponent(lines.filter(Boolean).join('\n'))}`}
+function invoiceNotice(i,s){
+  if(!s||!i)return'';
+  const cls=String(s.class||'').toLowerCase(),session=cls==='pemula a'||cls==='pemula b';
+  if(session){
+    const quota=cls==='pemula a'?4:8;
+    const ids=new Set(i.attendanceIds||[]);
+    let dates=ids.size?db.attendance.filter(a=>a.studentId===s.id&&ids.has(a.id)).map(a=>a.date):[];
+    dates=dates.filter(Boolean).sort();
+    if(dates.length>=quota){
+      return `Kami informasikan bahwa jumlah ${quota} kali pertemuan putra/putri Bapak/Ibu, ${s.name}, telah habis. Tanggal kehadiran: ${dates.slice(0,quota).map(fmtDate).join(', ')}. Silakan melakukan pembayaran untuk ${quota} kali pertemuan berikutnya.`;
+    }
+    return `Kami informasikan tagihan latihan putra/putri Bapak/Ibu, ${s.name}, untuk ${quota} kali pertemuan${dates.length?`. Tanggal kehadiran yang tercatat: ${dates.map(fmtDate).join(', ')}`:''}. Silakan melakukan pembayaran sesuai tagihan.`;
+  }
+  const due=i.due||getBillingStatus(s).dueDate;
+  return `Kami informasikan bahwa pembayaran latihan bulanan putra/putri Bapak/Ibu, ${s.name}, kelas ${s.class}, jatuh tempo pada ${fmtDate(due)}. Silakan melakukan pembayaran untuk periode bulan berikutnya.`;
+}
+function whatsappInvoiceLink(studentId,invoiceId=''){const s=student(studentId);if(!s)return'#';const invoice=invoiceId?db.invoices.find(i=>i.id===invoiceId):ensureInvoiceForStudent(studentId,'whatsapp');if(!invoice)return'#';const phone=normalizePhone(s.phone).replace(/^0/,'62'),itemText=(invoice.items||[]).map(x=>`• ${x.description}: ${money(x.amount)}`).join('\n');const lines=[`Assalamu'alaikum Bapak/Ibu ${s.parent||'Orang Tua'},`,'',invoiceNotice(invoice,s),`Invoice: ${invoice.id}`,`Periode: ${invoice.period}`,itemText,`Jatuh tempo: ${fmtDate(invoice.due)}`,`Total: ${money(invoice.amount)}`,'','Mohon melakukan pembayaran sesuai ketentuan klub. Terima kasih.'];return`https://wa.me/${phone}?text=${encodeURIComponent(lines.filter(Boolean).join('\n'))}`}
 function openWhatsAppInvoice(studentId,invoiceId=''){window.open(whatsappInvoiceLink(studentId,invoiceId),'_blank');renderAll();toast('Draft tagihan WhatsApp dibuka.')}
 function createInvoiceFromAttendance(studentId){const inv=ensureInvoiceForStudent(studentId,'attendance');saveDB();toast(`Invoice ${inv.id} berhasil dibuat.`);navigate('billing')}
 function billingActionButtons(s){const state=getBillingStatus(s);if(!state.showInvoice)return'<span class="table-note">Belum perlu tagihan.</span>';const inv=activeInvoiceForStudent(s.id,state.cycleKey);return`<div class="row-actions">${inv?`<button class="mini-action danger" onclick="printInvoice('${inv.id}')">Invoice</button>`:`<button class="mini-action danger" onclick="createInvoiceFromAttendance('${s.id}')">Buat Invoice</button>`}<button class="mini-action whatsapp" onclick="openWhatsAppInvoice('${s.id}')">WhatsApp</button></div>`}
@@ -3899,7 +3915,7 @@ function printProgramPlan(){const items=getProgramPlanItems();if(!items.length)r
 function downloadProgramPlanHTML(){const items=getProgramPlanItems();if(!items.length)return toast('Tidak ada jadwal program yang dapat diunduh.','error');const cls=val('mPlanClass'),title=`Rencana Program Latihan ${cls}`,html=printableShell(title,`<div class="box"><b>Kelas:</b> ${esc(cls)}<br><b>Jumlah Pertemuan:</b> ${items.length}<br><b>Panjang Kolam:</b> ${poolWidthMeters()} meter</div>${programPlanHTML(items)}`,false);download(`program-latihan-${cls.toLowerCase().replaceAll(' ','-')}-${nowISO()}.html`,html,'text/html;charset=utf-8');toast('File program latihan berhasil diunduh.')}
 
 function printPrograms(){const cls=document.getElementById('programClass').value,date=document.getElementById('programDate').value,p=db.programs.find(x=>x.class===cls&&x.date===date)||autoProgramForClass(cls,date);openPrint('Program Latihan',`<div class="box"><h2>${p.class}</h2><p>${fmtDate(p.date)} • Fokus ${p.focus} • Volume ${p.volume} m • Durasi ±${p.duration} menit</p><ol>${p.sets.map(x=>`<li>${x}</li>`).join('')}</ol></div>`)}
-function printInvoice(id){const i=db.invoices.find(x=>x.id===id),s=student(i.studentId);if(!i)return;const items=(i.items&&i.items.length?i.items:[{description:`Biaya latihan ${i.period}`,amount:i.amount}]);openPrint('Invoice Pembayaran',`<div class="box"><table><tr><td><b>No. Invoice</b><br>${i.id}</td><td><b>Periode</b><br>${i.period}</td><td><b>Jatuh Tempo</b><br>${fmtDate(i.due)}</td></tr></table></div><div class="box"><b>Ditagihkan kepada</b><h2>${s?.name||i.studentId}</h2><p>${s?.id||''} • ${s?.class||''} • ${s?.school||'-'}<br>${s?.parent||''} • ${s?.phone||''}</p></div>${tableHTML(['Deskripsi','Nominal'],items.map(x=>[x.description,money(x.amount)]))}<div class="right" style="margin-top:18px"><div>Total</div><div class="total">${money(i.amount)}</div><p>Status: <b>${i.status}</b></p></div>`)}
+function printInvoice(id){const i=db.invoices.find(x=>x.id===id),s=student(i.studentId);if(!i)return;const items=(i.items&&i.items.length?i.items:[{description:`Biaya latihan ${i.period}`,amount:i.amount}]);openPrint('Invoice Pembayaran',`<div class="box"><table><tr><td><b>No. Invoice</b><br>${i.id}</td><td><b>Periode</b><br>${i.period}</td><td><b>Jatuh Tempo</b><br>${fmtDate(i.due)}</td></tr></table></div><div class="box"><b>Ditagihkan kepada</b><h2>${s?.name||i.studentId}</h2><p>${s?.id||''} • ${s?.class||''} • ${s?.school||'-'}<br>${s?.parent||''} • ${s?.phone||''}</p></div><div class="box"><b>Pemberitahuan untuk Orang Tua/Wali</b><p>${esc(invoiceNotice(i,s))}</p></div>${tableHTML(['Deskripsi','Nominal'],items.map(x=>[x.description,money(x.amount)]))}<div class="right" style="margin-top:18px"><div>Total</div><div class="total">${money(i.amount)}</div><p>Status: <b>${i.status}</b></p></div>`)}
 function printReport(id){const r=db.reports.find(x=>x.id===id),s=student(r.studentId),g=reportGroups(r),attendancePct=r.sessionsTarget?Math.round((r.attendancePresent||0)/r.sessionsTarget*100):0;const identity=tableHTML(['ID Siswa','Nama','Tempat, Tgl Lahir','Asal Sekolah','Kelas','Periode','Pelatih'],[[s?.id||'',s?.name||r.studentId,`${s?.birthPlace||'-'}, ${s?.birth?fmtDate(s.birth):'-'}`,s?.school||'-',s?.class||'-',r.period,r.coach||'-']]);const scores=tableHTML(['Bidang Penilaian','Aspek','Nilai'],[['Fundamental Air','Kepercayaan diri di air',reportScore(r,'waterConfidence')],['Fundamental Air','Kontrol pernapasan',reportScore(r,'breathing')],['Fundamental Air','Streamline dan posisi tubuh',reportScore(r,'streamline')],['Penguasaan Gaya','Gaya bebas',reportScore(r,'freestyle')],['Penguasaan Gaya','Gaya punggung',reportScore(r,'backstroke')],['Penguasaan Gaya','Gaya dada',reportScore(r,'breaststroke')],['Penguasaan Gaya','Gaya kupu-kupu',reportScore(r,'butterfly')],['Race Skills','Start / dive',reportScore(r,'startDive')],['Race Skills','Turn dan finish',reportScore(r,'turnFinish')],['Kondisi Fisik','Daya tahan',reportScore(r,'endurance')],['Kondisi Fisik','Kecepatan',reportScore(r,'speed')],['Karakter','Disiplin',reportScore(r,'discipline')],['Karakter','Sikap, fokus, dan kerja sama',reportScore(r,'attitude')]]);openPrint('Raport Hasil Belajar Renang',`${identity}<div class="summary-grid"><div class="summary-item"><b>${g.fundamental}</b><span>FUNDAMENTAL</span></div><div class="summary-item"><b>${g.strokes}</b><span>PENGUASAAN 4 GAYA</span></div><div class="summary-item"><b>${g.performance}</b><span>PERFORMA</span></div><div class="summary-item"><b>${g.character}</b><span>KARAKTER</span></div></div><div class="box"><table><tr><td><b>Periode Evaluasi</b><br>${r.startDate?fmtDate(r.startDate):'-'} s.d. ${r.endDate?fmtDate(r.endDate):'-'}</td><td><b>Kehadiran</b><br>${reportAttendanceText(r)}${r.sessionsTarget?` • ${attendancePct}%`:''}</td><td><b>Nilai Akhir</b><br><span class="grade">${g.final}</span></td><td><b>Predikat</b><br>${reportGrade(g.final)}</td></tr></table></div><h3>Rincian Kompetensi</h3>${scores}<div class="note-grid"><div class="note"><b>Capaian Utama</b>${esc(r.achievements||'-')}</div><div class="note"><b>Aspek yang Perlu Ditingkatkan</b>${esc(r.improvement||'-')}</div><div class="note"><b>Target Periode Berikutnya</b>${esc(r.nextTarget||'-')}</div><div class="note"><b>Catatan Pelatih untuk Orang Tua</b>${esc(r.notes||'-')}</div></div><div class="signature"><div><b>Orang Tua/Wali</b><div class="space"></div><span>(________________________)</span></div><div><b>Pelatih</b><div class="space"></div><span>${esc(r.coach||'________________________')}</span></div></div>`)}
 function printTiming(){openPrint('Progres Catatan Waktu',tableHTML(['Tanggal','Atlet','Event','Nomor','Waktu','PB Sebelumnya'],db.timings.map(t=>[fmtDate(t.date),student(t.studentId)?.name||t.studentId,t.event,t.race,t.time,t.previous])))}
 function printCash(){const month=document.getElementById('cashMonth').value,rows=db.cash.filter(x=>x.date.startsWith(month));const inc=rows.filter(x=>x.type==='Masuk').reduce((n,x)=>n+x.amount,0),out=rows.filter(x=>x.type==='Keluar').reduce((n,x)=>n+x.amount,0);openPrint('Laporan Kas '+month,`<div class="box"><b>Total Pemasukan:</b> ${money(inc)}<br><b>Total Pengeluaran:</b> ${money(out)}<br><b>Saldo:</b> ${money(inc-out)}</div>${tableHTML(['Tanggal','Keterangan','Kategori','Masuk','Keluar','Metode'],rows.map(x=>[fmtDate(x.date),x.desc,x.category,x.type==='Masuk'?money(x.amount):'-',x.type==='Keluar'?money(x.amount):'-',x.method]))}`)}
@@ -9074,7 +9090,7 @@ qrStyle.textContent='.sw-preview-qr{position:absolute;right:22px;bottom:22px;bac
 document.head.appendChild(qrStyle);
 
 /* ---------- 3. ABSENSI BARCODE OTOMATIS ----------------------------- */
-let autoStream=null,autoRaf=null,lastCode='',lastAt=0,jsqrLoading=null,sessionLog=[];
+let autoStream=null,autoRaf=null,heldCode='',emptyFrames=0,scanBusy=false,seenStudents=new Set(),jsqrLoading=null,sessionLog=[];
 function beep(ok){
   try{
     const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)return;
@@ -9104,8 +9120,8 @@ function saveAttendance(s){
   const date=scanDate();
   const now=new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}).replace('.',':');
   if(typeof attendanceFor==='function'&&attendanceFor(s.id,date)){
-    beep(false);autoStatus(s.name+' sudah tercatat hadir hari ini.','warn');
-    sessionLog.unshift({ok:false,name:s.name,info:'Sudah absen sebelumnya',time:now});renderScanLog();return;
+    beep(false);autoStatus(s.name+' sudah tercatat hadir pada '+fmtDate(date)+'. Siap untuk atlet berikutnya.','warn');
+    return;
   }
   db.attendance.push({id:uid('ATT'),date,time:now,studentId:s.id,method:'Barcode',status:'Hadir'});
   if(typeof syncSessionRemaining==='function')syncSessionRemaining(s);
@@ -9115,18 +9131,21 @@ function saveAttendance(s){
   if(typeof renderAttendance==='function')renderAttendance();
   if(typeof renderDashboard==='function')renderDashboard();
   beep(true);
-  autoStatus('✓ '+s.name+' tersimpan otomatis pukul '+now,'ok');
+  autoStatus('✓ '+s.name+' hadir pukul '+now+'. Siap untuk atlet berikutnya.','ok');
   const sisa=(s.sessionRemaining!==undefined&&s.sessionRemaining!==null)?('Sisa pertemuan '+s.sessionRemaining):(s.class||'');
   sessionLog.unshift({ok:true,name:s.name,info:sisa,time:now});renderScanLog();
 }
-function handleCode(raw){
-  const now=Date.now();
-  if(raw===lastCode&&now-lastAt<2500)return;
-  lastCode=raw;lastAt=now;
-  const s=matchStudent(raw);
-  if(!s){beep(false);autoStatus('Kode terbaca tetapi tidak cocok dengan data atlet: '+raw,'bad');return}
-  saveAttendance(s);
+function handleCode(raw,fromCamera=false){
+  const code=String(raw||'').trim();if(!code||scanBusy)return;
+  // Satu kartu yang masih berada di depan lensa hanya boleh diproses sekali.
+  if(fromCamera){emptyFrames=0;if(code===heldCode)return;heldCode=code}
+  const s=matchStudent(code);
+  if(!s){beep(false);autoStatus('Kode terbaca tetapi tidak cocok dengan data atlet: '+code,'bad');return}
+  if(fromCamera&&seenStudents.has(s.id))return;
+  scanBusy=true;
+  try{saveAttendance(s);if(fromCamera)seenStudents.add(s.id)}finally{scanBusy=false}
 }
+function cameraEmpty(){if(++emptyFrames>=8){heldCode='';emptyFrames=8}}
 function loadJsQR(){
   if(window.jsQR)return Promise.resolve(true);
   if(jsqrLoading)return jsqrLoading;
@@ -9156,7 +9175,7 @@ async function startAuto(){
       try{detector=new BarcodeDetector({formats:['qr_code','code_128','code_39','code_93','ean_13','ean_8','upc_a']})}catch(e){detector=new BarcodeDetector()}
       const loop=async()=>{
         if(!document.getElementById('swAutoVideo'))return stopAuto();
-        try{const hits=await detector.detect(video);const raw=hits?.[0]?.rawValue;if(raw)handleCode(String(raw).trim())}catch(e){}
+        try{const hits=await detector.detect(video);const raw=hits?.[0]?.rawValue;if(raw)handleCode(String(raw).trim(),true);else cameraEmpty()}catch(e){}
         autoRaf=requestAnimationFrame(loop);
       };
       autoRaf=requestAnimationFrame(loop);return;
@@ -9172,7 +9191,7 @@ async function startAuto(){
         try{
           const img=ctx.getImageData(0,0,canvas.width,canvas.height);
           const code=window.jsQR(img.data,img.width,img.height,{inversionAttempts:'attemptBoth'});
-          if(code&&code.data)handleCode(String(code.data).trim());
+          if(code&&code.data)handleCode(String(code.data).trim(),true);else cameraEmpty();
         }catch(e){}
       }
       autoRaf=requestAnimationFrame(loop);
@@ -9185,12 +9204,12 @@ async function startAuto(){
 window.swAutoScanManual=function(){
   const input=document.getElementById('swAutoInput');if(!input)return;
   const v=input.value.trim();if(!v)return;
-  lastCode='';handleCode(v);input.value='';input.focus();
+  handleCode(v);input.value='';input.focus();
 };
 window.openScanner=window.openFullAttendanceScanner=window.attendanceBarcodeMode=function(){
   const date=scanDate();
   if(!date){toast('Pilih tanggal lalu klik “Cari / Tampilkan Absensi” terlebih dahulu.','error');return}
-  sessionLog=[];lastCode='';
+  sessionLog=[];heldCode='';emptyFrames=0;seenStudents.clear();
   openModal('Absensi Barcode Otomatis',`
     <div class="sw-auto-wrap">
       <div class="sw-auto-date">Tanggal absensi: <b>${escQ(typeof fmtDate==='function'?fmtDate(date):date)}</b> · mode otomatis, tanpa konfirmasi</div>
@@ -19657,6 +19676,87 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
 /***/ })
 /******/ ])["default"];
 });
+</script>
+
+<script>
+/* SWIMORA V16.6 — Asisten Pelatih AI (tanya data atlet & absensi) */
+(function(){
+'use strict';
+const DEFAULT_URL='https://project--fe23bbb2-d189-4530-84a6-5fed55db5a91.lovable.app/api/public/coach-ai';
+const HKEY='swimora_ai_chat_v1',UKEY='swimora_ai_url';
+const E=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let history=[];try{history=JSON.parse(localStorage.getItem(HKEY)||'[]')}catch(e){}
+let busy=false;
+const save=()=>localStorage.setItem(HKEY,JSON.stringify(history.slice(-40)));
+function iso(d){return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10)}
+function buildData(){
+  const D=(typeof db!=='undefined'?db:window.db)||{},today=new Date(),t=iso(today);
+  const since=iso(new Date(today.getTime()-120*864e5)),d30=iso(new Date(today.getTime()-30*864e5));
+  const att=(D.attendance||[]).filter(a=>a.date>=since);
+  const students=(D.students||[]).map(s=>{
+    const mine=att.filter(a=>a.studentId===s.id&&a.status!=='Tidak Hadir'&&a.status!=='Alpa');
+    const last=mine.map(a=>a.date).sort().pop()||null;
+    const o={id:s.id,name:s.name,class:s.class,status:s.status,days:s.days||s.trainingDays||s.schedule,joined:s.joinDate||s.createdAt,
+      remaining:s.sessionRemaining??s.remainingSessions??s.remaining,lastAttend:last,
+      daysSinceLast:last?Math.round((today-new Date(last))/864e5):null,attendLast30:mine.filter(a=>a.date>=d30).length,attendLast120:mine.length};
+    const inv=(D.invoices||[]).filter(i=>i.studentId===s.id&&i.status!=='Lunas');
+    if(inv.length)o.unpaidInvoices=inv.map(i=>({amount:i.amount||i.total,date:i.date||i.createdAt}));
+    return o;
+  });
+  const log=att.slice(-3000).map(a=>[a.date,a.studentId,a.status||'Hadir',a.method||'']);
+  return JSON.stringify({today:t,note:'attendanceLog = [tanggal, idAtlet, status, metode], 120 hari terakhir',students,attendanceLog:log}).slice(0,175000);
+}
+function md(t){
+  let h=E(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+  return h.split('\n').map(l=>/^\s*[-•*]\s+/.test(l)?'<li>'+l.replace(/^\s*[-•*]\s+/,'')+'</li>':(l.trim()?'<p>'+l+'</p>':'')).join('').replace(/(<li>.*?<\/li>)+/g,m=>'<ul>'+m+'</ul>');
+}
+function render(){
+  const box=document.getElementById('swAiMsgs');if(!box)return;
+  box.innerHTML=history.length?history.map(m=>`<div class="sw-ai-m ${m.role}">${m.role==='user'?E(m.content):md(m.content)}</div>`).join(''):
+   '<div class="sw-ai-empty"><b>Tanya apa saja tentang atlet & absensi.</b><span>Contoh:</span>'+
+   ['Siapa saja atlet yang perlu ditindaklanjuti minggu ini?','Hari apa yang paling sering kosong?','Atlet mana yang kehadirannya menurun bulan ini?','Siapa yang sisa pertemuannya habis atau punya tagihan?']
+   .map(q=>`<button type="button" onclick="swAiAsk(${E(JSON.stringify(q))})">${E(q)}</button>`).join('')+'</div>';
+  box.scrollTop=box.scrollHeight;
+}
+window.swAiAsk=async function(q){
+  const input=document.getElementById('swAiInput');q=(q||input?.value||'').trim();if(!q||busy)return;
+  if(input)input.value='';busy=true;
+  const prior=history.slice(-10).map(m=>({role:m.role,content:m.content}));
+  history.push({role:'user',content:q});const ans={role:'assistant',content:''};history.push(ans);
+  render();const box=document.getElementById('swAiMsgs');box.lastElementChild.innerHTML='<span class="sw-ai-typing">Menganalisis data…</span>';
+  try{
+    const r=await fetch(localStorage.getItem(UKEY)||DEFAULT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q,history:prior,data:buildData()})});
+    if(!r.ok||!r.body)throw new Error(await r.text().catch(()=>'')||('HTTP '+r.status));
+    const rd=r.body.getReader(),dec=new TextDecoder();
+    while(true){const{done,value}=await rd.read();if(done)break;ans.content+=dec.decode(value,{stream:true});const el=document.getElementById('swAiMsgs')?.lastElementChild;if(el)el.innerHTML=md(ans.content)}
+    if(!ans.content.trim())ans.content='AI tidak memberikan jawaban.';
+  }catch(e){ans.content='[GALAT] Asisten AI tidak dapat dihubungi. Pastikan layanan AI sudah dipublikasikan dan internet aktif. ('+(e.message||e)+')'}
+  busy=false;save();render();document.getElementById('swAiInput')?.focus();
+};
+window.swAiClear=function(){if(!confirm('Hapus riwayat percakapan?'))return;history=[];save();render()};
+window.openCoachAI=function(){
+  openModal('🤖 Asisten Pelatih AI',`<div class="sw-ai"><div class="sw-ai-info">AI membaca data atlet, sisa pertemuan, tagihan, dan absensi 120 hari terakhir untuk menemukan pola kehadiran dan atlet yang perlu ditindaklanjuti.</div><div id="swAiMsgs" class="sw-ai-msgs"></div><div class="sw-ai-bar"><textarea id="swAiInput" rows="2" placeholder="Tulis pertanyaan… (Enter untuk kirim)"></textarea><button class="btn btn-primary" type="button" onclick="swAiAsk()">Kirim</button></div><div class="sw-ai-foot"><button type="button" onclick="swAiClear()">Percakapan baru</button><span>Riwayat tersimpan di perangkat ini</span></div></div>`,'','');
+  render();const i=document.getElementById('swAiInput');if(i){i.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();swAiAsk()}});i.focus()}
+};
+function mountFab(){if(document.getElementById('swAiFab'))return;if(!document.getElementById('view-dashboard')&&!document.getElementById('view-attendance'))return;
+  const b=document.createElement('button');b.id='swAiFab';b.type='button';b.innerHTML='🤖 Asisten AI';b.onclick=openCoachAI;document.body.appendChild(b)}
+function mountAttBtn(){const bar=document.getElementById('swBarcodeBtnBar');if(!bar||bar.querySelector('.sw-ai-btn'))return;
+  const b=document.createElement('button');b.className='btn btn-outline sw-ai-btn';b.type='button';b.textContent='🤖 Analisis Kehadiran AI';b.onclick=openCoachAI;bar.appendChild(b)}
+setInterval(()=>{mountFab();mountAttBtn()},800);
+const st=document.createElement('style');st.textContent=`
+#swAiFab{position:fixed;right:18px;bottom:18px;z-index:900;border:0;border-radius:99px;padding:12px 18px;font-weight:800;background:linear-gradient(135deg,#b8f13e,#7fd320);color:#061827;box-shadow:0 10px 26px rgba(6,24,39,.35);cursor:pointer}
+.sw-ai-info{font-size:12.5px;color:#4b6676;background:#eef5f9;border-radius:12px;padding:10px 12px}
+.sw-ai-msgs{height:min(52vh,460px);overflow:auto;margin:10px 0;display:flex;flex-direction:column;gap:10px;padding:4px}
+.sw-ai-m{max-width:88%;font-size:14px;line-height:1.5}.sw-ai-m p{margin:0 0 6px}.sw-ai-m ul{margin:4px 0 8px;padding-left:18px}
+.sw-ai-m.user{align-self:flex-end;background:#061827;color:#fff;padding:9px 13px;border-radius:14px 14px 4px 14px}
+.sw-ai-m.assistant{align-self:flex-start;color:#102b3c}
+.sw-ai-typing{color:#6f8190;font-style:italic}
+.sw-ai-empty{display:flex;flex-direction:column;gap:8px;color:#4b6676;font-size:13px;margin:auto 0}
+.sw-ai-empty button{text-align:left;border:1px solid #d3e2ea;background:#fff;border-radius:12px;padding:9px 12px;cursor:pointer;color:#0a4469;font-weight:600}
+.sw-ai-bar{display:flex;gap:8px;align-items:flex-end}.sw-ai-bar textarea{flex:1;resize:none;padding:10px 12px;border:1px solid #d3e2ea;border-radius:12px;font:inherit}
+.sw-ai-foot{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;color:#8aa0ad}.sw-ai-foot button{border:0;background:none;color:#0a4469;font-weight:700;cursor:pointer}
+`;document.head.appendChild(st);
+})();
 </script>
 </body>
 </html>
