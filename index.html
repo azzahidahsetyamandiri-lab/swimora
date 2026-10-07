@@ -19783,5 +19783,118 @@ const st=document.createElement('style');st.textContent=`
 `;document.head.appendChild(st);
 })();
 </script>
+
+<script>
+(function(){
+'use strict';
+// SWIMORA V17 SPORT SCIENCE ENGINE
+// Development logic: competency-first, class progression, event-specific performance for Prestasi.
+const SS={
+  version:'17.0 SPORT SCIENCE',
+  classes:{
+    'Pemula A':{stage:'LEARN',desc:'Water competence, safety, body position, breathing, propulsion and basic stroke coordination.',duration:60,volume:[800,1400],shares:{skill:.60,aerobic:.25,speed:.05,anc:.00,recovery:.10}},
+    'Pemula B':{stage:'BUILD',desc:'Consolidate strokes, streamline, breathing, basic aerobic foundation and simple speed.',duration:70,volume:[1200,2200],shares:{skill:.50,aerobic:.35,speed:.10,anc:.00,recovery:.05}},
+    'Intermediate':{stage:'DEVELOP',desc:'Refine four-stroke technique while progressively developing aerobic capacity, speed and introductory anaerobic work.',duration:85,volume:[2200,4200],shares:{skill:.30,aerobic:.40,speed:.15,anc:.10,recovery:.05}},
+    'Prestasi':{stage:'PERFORM',desc:'Individualized event, PB, race-demand and competition-date driven preparation.',duration:100,volume:[3200,7000],shares:{skill:.20,aerobic:.35,speed:.20,anc:.20,recovery:.05}}
+  },
+  events:{
+    '50':{label:'Sprint 50 m',alactic:'high',glycolytic:'high',aerobic:'support',primary:['speed','power','start','underwater','turn/finish']},
+    '100':{label:'Sprint 100 m',alactic:'moderate',glycolytic:'high',aerobic:'high-support',primary:['speed','race pace','lactate tolerance','start','underwater','turn']},
+    '200':{label:'Middle 200 m',alactic:'support',glycolytic:'moderate-high',aerobic:'high',primary:['aerobic power','race pace','technical economy','turn','repeatability']},
+    '400':{label:'Distance 400 m',alactic:'support',glycolytic:'moderate',aerobic:'very high',primary:['aerobic capacity','threshold','pace control','economy','repeatability']},
+    '800':{label:'Distance 800 m',alactic:'support',glycolytic:'support',aerobic:'very high',primary:['aerobic capacity','threshold','pace control','economy','nutrition/recovery']},
+    '1500':{label:'Distance 1500 m',alactic:'support',glycolytic:'support',aerobic:'very high',primary:['aerobic capacity','threshold','economy','pace control','repeatability']}
+  }
+};
+function clsKey(s){const c=String(typeof s==='string'?s:s?.class||'').toLowerCase();if(c.includes('prestasi'))return'Prestasi';if(c.includes('intermediate'))return'Intermediate';if(c.includes('pemula b')||c==='b')return'Pemula B';return'Pemula A'}
+function raceKey(r){const m=String(r||'').match(/(50|100|200|400|800|1500)\s*m/i);return m?m[1]:'100'}
+function evt(r){return SS.events[raceKey(r)]||SS.events['100']}
+function clamp(n,a=0,b=100){return Math.max(a,Math.min(b,Number(n)||0))}
+function pool(){return Math.max(25,Number(typeof poolWidthMeters==='function'?poolWidthMeters():25)||25)}
+function meters(n){const p=pool();return Math.max(p,Math.round(Number(n||p)/p)*p)}
+function setBlock(label,distance,reps,rest,pace){return `${label}: ${reps} × ${meters(distance)} m${pace?' @ '+pace:''}${rest?' • rest '+rest:''}`}
+function professionalAutoProgram(cls,date){
+  const c=SS.classes[cls]||SS.classes['Pemula A'];
+  const d=new Date(date+'T00:00:00'); const week=((Math.floor((d-new Date(d.getFullYear(),0,1))/86400000)+new Date(d.getFullYear(),0,1).getDay()+6)%7); const seed=(d.getDay()+week)%5;
+  const unit=pool(); let focus='',sets=[],volume=0,duration=c.duration,science='';
+  if(cls==='Pemula A'){
+    const days=[
+      ['Water competence & breathing',[setBlock('Warm-up',unit,4,'20 s','easy'),setBlock('Skill',unit,6,'20 s','controlled'),setBlock('Main',unit*2,6,'30 s','easy-moderate'),setBlock('Skill',unit,4,'20 s','quality'),setBlock('Cool-down',unit,2,'20 s','easy')]],
+      ['Streamline & body position',[setBlock('Warm-up',unit,4,'20 s','easy'),setBlock('Skill',unit,8,'20 s','quality'),setBlock('Main',unit*2,6,'30 s','easy-moderate'),setBlock('Skill',unit,4,'20 s','quality'),setBlock('Cool-down',unit,2,'20 s','easy')]],
+      ['Freestyle coordination',[setBlock('Warm-up',unit,4,'20 s','easy'),setBlock('Drill',unit,8,'20 s','quality'),setBlock('Main',unit*2,8,'30 s','easy-moderate'),setBlock('Skill',unit,4,'20 s','quality'),setBlock('Cool-down',unit,2,'20 s','easy')]],
+      ['Breaststroke foundation',[setBlock('Warm-up',unit,4,'20 s','easy'),setBlock('Drill',unit,8,'20 s','quality'),setBlock('Main',unit*2,6,'30 s','easy-moderate'),setBlock('Skill',unit,4,'20 s','quality'),setBlock('Cool-down',unit,2,'20 s','easy')]],
+      ['Movement confidence',[setBlock('Warm-up',unit,4,'20 s','easy'),setBlock('Skill',unit,8,'20 s','quality'),setBlock('Main',unit*2,6,'30 s','easy'),setBlock('Skill',unit,4,'20 s','quality'),setBlock('Cool-down',unit,2,'20 s','easy')]]
+    ][seed]; focus=days[0];sets=days[1];science='No formal energy-system prescription. Priority is skill acquisition, water competence and enjoyable movement; aerobic exposure is incidental and technique-led.';
+  } else if(cls==='Pemula B'){
+    const days=[['Four-stroke consolidation','technique'],['Aerobic foundation','aerobic'],['Breathing & streamline','technique'],['Basic speed & skill','speed'],['Mixed stroke endurance','aerobic']]; const x=days[seed];focus=x[0];
+    sets=[setBlock('Warm-up',unit,6,'20–30 s','easy'),setBlock('Technique',unit*2,8,'20–30 s','quality'),setBlock(x[1]==='speed'?'Speed skill':'Foundation main',unit*4,6,'30–45 s',x[1]==='speed'?'fast / full control':'easy-moderate'),setBlock('Stroke consolidation',unit*2,6,'30 s','moderate'),setBlock('Cool-down',unit,4,'20 s','easy')];science='Technique remains dominant. Aerobic foundation and simple speed are introduced without formal lactate/threshold targeting.';
+  } else if(cls==='Intermediate'){
+    const days=[['Technique + AEC','aec'],['Aerobic endurance','aec'],['Speed + skills','speed'],['Aerobic power + pace','aerobicPower'],['ANC introduction','anc']]; const x=days[seed];focus=x[0];
+    const main=x[1]==='speed'?setBlock('Speed',unit*2,8,'45–75 s','fast / technical'):x[1]==='anc'?setBlock('ANC intro',unit*4,6,'60–120 s','RPE 7–8'):x[1]==='aerobicPower'?setBlock('Aerobic power',unit*4,8,'20–45 s','RPE 6–7'):setBlock('AEC',unit*4,8,'20–40 s','RPE 4–6');
+    sets=[setBlock('Warm-up',unit,8,'20–30 s','easy'),setBlock('Technical quality',unit*2,8,'20–30 s','quality'),main,setBlock('Race skills',unit*2,6,'30–45 s','build'),setBlock('Cool-down',unit,4,'20–30 s','easy')];science='Progressive AEC + speed with carefully introduced ANC. Technique, maturation, recovery and previous load remain the constraints on progression.';
+  } else {
+    const e=evt(document.getElementById('mPBRace')?.value||'100 Free');
+    const keys=['aerobic','race','speed','threshold','skills']; const k=keys[seed]; focus=`${e.label} • ${k}`;
+    const raceDist=Number(raceKey(e.label)||100); const r=Math.max(2,Math.round(2400/raceDist));
+    const main=k==='speed'?setBlock('Race speed',raceDist,r,'2–4 min','95–100% race quality'):k==='threshold'?setBlock('Threshold',raceDist*2,Math.max(4,Math.round(r/2)),'30–60 s','RPE 6–7'):k==='race'?setBlock('Race pace',raceDist,Math.max(6,Math.round(r+2)),'45–120 s','target race pace'):k==='skills'?setBlock('Race skills',raceDist,Math.max(6,r),'30–90 s','technical quality'):setBlock('Aerobic capacity',raceDist*4,Math.max(4,Math.round(r/2)),'30–60 s','RPE 5–7');
+    sets=[setBlock('Warm-up',unit,10,'20–30 s','easy → build'),setBlock('Drill / activation',unit*2,8,'20–30 s','technical'),main,setBlock('Start/turn/finish',unit,8,'60–120 s','high quality'),setBlock('Cool-down',unit,6,'20–30 s','easy')];science=`Individual performance mode. Event demand profile: alactic ${e.alactic}, glycolytic ${e.glycolytic}, aerobic ${e.aerobic}. All three systems contribute; emphasis is relative, not exclusive.`;
+  }
+  volume=sets.reduce((sum,s)=>{const m=s.match(/(\d+)\s*×\s*(\d+)\s*m/);return sum+(m?Number(m[1])*Number(m[2]):0)},0); volume=meters(volume);
+  const min=cls==='Prestasi'?SS.classes[cls].volume[0]:SS.classes[cls].volume[0], max=cls==='Prestasi'?SS.classes[cls].volume[1]:SS.classes[cls].volume[1]; volume=clamp(volume,min,max); volume=meters(volume);
+  return {class:cls,date,focus,volume,totalWidths:Math.round(volume/unit),poolWidth:unit,duration,sets,stage:c.stage,science,engineVersion:SS.version};
+}
+window.autoProgramForClass=professionalAutoProgram;
+if(typeof autoProgramForClass==='function') autoProgramForClass=professionalAutoProgram;
+window.swimoraSportScience=SS;
+window.swimoraClassProfile=function(s){return SS.classes[clsKey(s)]};
+window.swimoraEventProfile=function(r){return evt(r)};
+
+// More rigorous individual periodization for Prestasi; development classes receive a development plan instead of forced peak programming.
+window.pbPeriodizationForStudent=function(s,race,competitionDate,weeks){
+  const c=clsKey(s), total=Math.max(4,Math.min(24,Number(weeks)||12)), startDate=new Date(), comp=new Date((competitionDate||nowISO())+'T00:00:00');
+  const days=Math.max(28,Math.ceil((comp-startDate)/86400000)), actual=Math.min(total,Math.max(4,Math.ceil(days/7))); const e=evt(race), base=typeof pbProgramForStudent==='function'?pbProgramForStudent(s,race):null;
+  if(c!=='Prestasi') return {student:s,race:race||'',pb:base?.pb||'-',pbSeconds:base?.pbSeconds||null,competitionDate,weeks:actual,sessionsPerWeek:Math.max(1,Number(document.getElementById('mPBSessions')?.value)||3),mode:'development',note:c==='Pemula A'?'Tidak ada peak/taper formal; fokus kompetensi air dan teknik.':'Tidak ada peak formal; fokus konsolidasi teknik, fondasi aerobik dan speed exposure.',plan:Array.from({length:actual},(_,i)=>({week:i+1,phase:c==='Pemula A'?'Skill Acquisition':'Foundation Development',focus:c==='Pemula A'?'Technique + water competence':'Technique + aerobic foundation + simple speed',volume:0,sessions:[]}))};
+  const sessionsPerWeek=Math.max(2,Math.min(8,Number(document.getElementById('mPBSessions')?.value)||4)); const plan=[];
+  for(let w=1;w<=actual;w++){
+    const pct=(w-1)/Math.max(1,actual-1); let phase,focus,volFactor,intensity;
+    if(pct<.25){phase='General Preparation';focus='Technical economy + AEC foundation';volFactor=.82;intensity='RPE 3–6';}
+    else if(pct<.65){phase='Specific Preparation';focus=`${e.label}: event-specific AEC/ANC + race skills`;volFactor=1;intensity='RPE 5–8';}
+    else if(pct<.88){phase='Pre-Competition';focus=`${e.label}: race pace, repeatability, start/turn/finish`;volFactor=.90;intensity='RPE 6–9';}
+    else{phase='Taper / Performance';focus='Reduce volume, preserve intensity, maximize freshness';volFactor=.55;intensity='RPE 4–8; race-pace touches';}
+    const baseVol=SS.classes.Prestasi.volume[0]+(SS.classes.Prestasi.volume[1]-SS.classes.Prestasi.volume[0])*Math.min(1,pct/.65); const weekly=meters(baseVol*volFactor); const sv=Math.max(pool()*4,Math.round(weekly/sessionsPerWeek/pool())*pool());
+    const sessions=[]; for(let j=0;j<sessionsPerWeek;j++){
+      const themes=['Technique + AEC','Event pace','Recovery / aerobic','ANC or speed','Race skills','Aerobic support','Race simulation','Recovery'][j%8];
+      const main=themes==='Event pace'?setBlock('Race pace',Number(raceKey(race))*2,Math.max(4,Math.round(sv/(Number(raceKey(race))*2)/2)),'60–120 s','target pace'):themes==='ANC or speed'?setBlock('ANC/speed',Number(raceKey(race)),Math.max(6,Math.round(sv/Number(raceKey(race))/2)),'90–240 s','RPE 8–9'):themes==='Recovery / aerobic'?setBlock('Aerobic support',pool()*4,Math.max(4,Math.round(sv/(pool()*4)/2)),'20–45 s','RPE 3–5'):themes==='Race simulation'?setBlock('Broken race',Number(raceKey(race)),Math.max(4,Math.round(sv/Number(raceKey(race))/2)),'2–4 min','race quality'):setBlock(themes,Math.max(pool(),Number(raceKey(race))),Math.max(4,Math.round(sv/Math.max(pool(),Number(raceKey(race)))/2)),'30–90 s',intensity);
+      sessions.push({day:j+1,theme:themes,volume:sv,sets:[setBlock('Warm-up',pool(),8,'20–30 s','easy → build'),setBlock('Technical / activation',pool()*2,6,'20–30 s','quality'),main,setBlock('Start/turn/finish',pool(),6,'60–120 s','high quality'),setBlock('Cool-down',pool(),4,'20–30 s','easy')]});
+    }
+    plan.push({week:w,phase,focus,volume:weekly,sessionsPerWeek,intensity,energyDemand:{alactic:e.alactic,glycolytic:e.glycolytic,aerobic:e.aerobic},sessions,deload:w%4===0&&phase!=='Taper / Performance'});
+  }
+  return {student:s,race:base?.race||race,pb:base?.pb||'-',pbSeconds:base?.pbSeconds||null,competitionDate,weeks:actual,sessionsPerWeek,mode:'individual-performance',eventProfile:e,plan,method:'Australian Swimming–informed progressive development; event-specific contribution profile; no single event is assigned to one energy system.'};
+};
+
+// Class-specific report weighting. Existing stored fields remain compatible; scoring changes by class.
+const metricSets={
+ 'Pemula A':{groups:{fundamental:{w:55,keys:['waterConfidence','breathing','streamline']},strokes:{w:25,keys:['freestyle','breaststroke','backstroke']},performance:{w:10,keys:['endurance','startDive','turnFinish']},character:{w:10,keys:['discipline','attitude']}},labels:['Water competence','Breathing','Body position/streamline','Basic stroke coordination','Movement endurance','Safety/start/stop','Learning behavior']},
+ 'Pemula B':{groups:{fundamental:{w:35,keys:['waterConfidence','breathing','streamline']},strokes:{w:35,keys:['freestyle','backstroke','breaststroke','butterfly']},performance:{w:20,keys:['endurance','speed','startDive','turnFinish']},character:{w:10,keys:['discipline','attitude']}},labels:['Stroke coordination','Breathing','Streamline','Four-stroke development','Basic aerobic foundation','Simple speed','Learning behavior']},
+ 'Intermediate':{groups:{fundamental:{w:25,keys:['waterConfidence','breathing','streamline']},strokes:{w:35,keys:['freestyle','backstroke','breaststroke','butterfly']},performance:{w:30,keys:['endurance','speed','startDive','turnFinish']},character:{w:10,keys:['discipline','attitude']}},labels:['Technical efficiency','Four-stroke mechanics','AEC/aerobic development','Speed','Intro ANC','Underwater/start/turn','PB progression']},
+ 'Prestasi':{groups:{fundamental:{w:15,keys:['waterConfidence','breathing','streamline']},strokes:{w:25,keys:['freestyle','backstroke','breaststroke','butterfly']},performance:{w:45,keys:['endurance','speed','startDive','turnFinish']},character:{w:15,keys:['discipline','attitude']}},labels:['Technical economy','Race-pace breathing','Underwater','Event-specific pace','Start/turn/finish','Repeatability','PB/race strategy','Training/recovery compliance']}
+};
+function scoreKey(r,k,fallback){return clamp(r?.[k]??fallback??80)}
+window.reportClassProfile=function(s){const c=clsKey(s);const x=metricSets[c];return{label:c,desc:SS.classes[c].desc,stage:SS.classes[c].stage,fields:Object.fromEntries(x.labels.map((v,i)=>['m'+i,v])),indicators:x.labels}}
+window.reportGroups=function(r){const s=typeof student==='function'?student(r?.studentId):null,c=clsKey(s),m=metricSets[c];const out={};Object.entries(m.groups).forEach(([name,g])=>out[name]=Math.round(g.keys.reduce((a,k)=>a+scoreKey(r,k,80),0)/g.keys.length));out.final=Math.round(Object.entries(m.groups).reduce((a,[k,g])=>a+out[k]*g.w,0)/100);return out};
+window.reportGrade=function(score){score=Number(score)||0;if(score>=91)return'A / Sangat Baik';if(score>=81)return'B / Baik';if(score>=71)return'C / Berkembang';if(score>=61)return'D / Perlu Pendampingan';return'E / Prioritas Intervensi'};
+
+function injectSportScienceUI(){
+  if(document.getElementById('swimoraSSPanel'))return;
+  const style=document.createElement('style');style.id='swimoraSSStyle';style.textContent=`#swimoraSSPanel{margin:0 0 16px;padding:18px;border:1px solid #cfe4ea;border-radius:16px;background:linear-gradient(135deg,#f5fbfc,#fff);box-shadow:0 8px 24px rgba(7,26,45,.05)}#swimoraSSPanel .ss-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.ss-badge{display:inline-flex;padding:5px 9px;border-radius:99px;background:#e2f6f4;color:#087c82;font-size:10px;font-weight:800;letter-spacing:.6px}.ss-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}.ss-card{padding:12px;border:1px solid #dce6ed;border-radius:12px;background:#fff}.ss-card b{display:block;font-size:12px}.ss-card span{display:block;color:#6f8190;font-size:11px;line-height:1.45;margin-top:4px}.ss-source{margin-top:12px;color:#6f8190;font-size:10px}@media(max-width:800px){.ss-grid{grid-template-columns:1fr 1fr}}@media(max-width:520px){.ss-grid{grid-template-columns:1fr}}`;
+  document.head.appendChild(style);
+  const view=document.getElementById('view-reports'); if(view){const p=document.createElement('div');p.id='swimoraSSPanel';p.innerHTML=`<div class="ss-head"><div><span class="ss-badge">SWIMORA SPORT SCIENCE ENGINE</span><h3 style="margin:7px 0 3px">Penilaian berdasarkan tahap perkembangan</h3><p class="muted small" style="margin:0">Indikator tidak diseragamkan antar kelas. Pemula dinilai berdasarkan kompetensi dan teknik; Intermediate mulai memakai indikator kapasitas; Prestasi memakai indikator performa lomba.</p></div></div><div class="ss-grid">${Object.entries(SS.classes).map(([k,v])=>`<div class="ss-card"><b>${k} • ${v.stage}</b><span>${v.desc}</span></div>`).join('')}</div><div class="ss-source">Kerangka pengembangan diinformasikan oleh Swimming Australia Swimmer Framework (Foundation → Pre-Elite) dan prinsip progresi teknik, aerobic development, speed/anaerobic development serta individualisasi pada tahap performa.</div></div>`;view.insertBefore(p,view.firstElementChild)}
+  const pv=document.getElementById('view-programs'); if(pv&&!document.getElementById('swimoraProgramSS')){const p=document.createElement('div');p.id='swimoraProgramSS';p.className='card';p.style.marginBottom='16px';p.innerHTML=`<div class="card-head"><div><h3>Logika Program Sport Science</h3><p>Engine otomatis mengikuti tahap perkembangan, bukan sekadar umur.</p></div><span class="status blue">V17.0</span></div><div class="list">${Object.entries(SS.classes).map(([k,v])=>`<div class="list-item"><div class="list-icon">${v.stage[0]}</div><div><b>${k}</b><span>${v.desc}</span></div></div>`).join('')}</div>`;pv.insertBefore(p,pv.firstElementChild)}
+}
+window.addEventListener('load',()=>setTimeout(injectSportScienceUI,800));
+const oldRenderReports=window.renderReports; window.renderReports=function(){const r=oldRenderReports?.apply(this,arguments);setTimeout(()=>{injectSportScienceUI();const sel=document.getElementById('reportClassFilter');if(sel){const c=sel.value;document.querySelectorAll('#reportTable tr').forEach(tr=>{if(!c)return;const text=tr.textContent||'';const s=(db.students||[]).find(x=>text.includes(x.name));if(s&&clsKey(s)!==c)tr.style.display='none';});}},0);return r};
+})();
+
+</script>
 </body>
 </html>
