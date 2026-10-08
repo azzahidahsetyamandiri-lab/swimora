@@ -19795,7 +19795,68 @@ window.showSwimoraPackages=function(){selected=null;let st=document.getElementBy
 function fileCheck(id,max,types){let el=document.getElementById(id);let f=el?.files?.[0];if(!f)return null;if(f.size>max){el.value='';toast('Ukuran file terlalu besar.','error');return null}if(types&&!types.includes(f.type)){el.value='';toast('Format file tidak didukung.','error');return null}return f}
 function bindFilePreviews(){let photo=document.getElementById('srPhoto'),proof=document.getElementById('srProof'),out=document.getElementById('sw18FilePreview');if(!photo||!out)return;const render=()=>{let a=photo.files?.[0],b=proof?.files?.[0];out.innerHTML=(a?'<div>✓ Pas foto: <b>'+escp(a.name)+'</b></div>':'')+(b?'<div>✓ Bukti transfer: <b>'+escp(b.name)+'</b></div>':'')};photo.onchange=()=>{fileCheck('srPhoto',2*1024*1024,['image/jpeg','image/png','image/webp']);render()};if(proof)proof.onchange=()=>{fileCheck('srProof',5*1024*1024,['image/jpeg','image/png','application/pdf']);render()}}
 function readAsDataURL(file){return new Promise((resolve,reject)=>{if(!file)return resolve('');let r=new FileReader();r.onload=()=>resolve(String(r.result||''));r.onerror=reject;r.readAsDataURL(file)})}
-async function submit(e){e.preventDefault();let p=selected||P.find(x=>x.id===val('srPackage'))||P[0];let photo=fileCheck('srPhoto',2*1024*1024,['image/jpeg','image/png','image/webp']);let proof=fileCheck('srProof',5*1024*1024,['image/jpeg','image/png','application/pdf']);if(!photo)return toast('Pas foto calon atlet wajib diunggah.','error');let c=getSupabaseClient();if(!c)return toast('Koneksi Supabase belum siap.','error');let btn=document.querySelector('.sw18-submit');let old=btn?.innerHTML;if(btn){btn.disabled=true;btn.innerHTML='<span>Mengirim data…</span><b>…</b>'}try{let clubId=club?.id;if(!clubId){let q=await c.from('clubs').select('id').eq('code',club?.code||'TRUDGEN').maybeSingle();if(q.error)throw q.error;clubId=q.data?.id}if(!clubId)throw new Error('Klub Trudgen belum ditemukan di database.');await loadClassMaps(c);let names={A:'Pemula A',B:'Pemula B',INT:'Intermediate',PRE:'Prestasi',PRI:'Kelas Privat',KED:'Persiapan Tes Kedinasan'};let className=names[p.id]||p.name;let classId=classIdByName.get(className.toLowerCase())||null;if(!classId){let qr=await c.from('classes').select('id,name').eq('club_id',clubId).eq('active',true);if(qr.error)throw qr.error;(qr.data||[]).forEach(x=>{if(x.id&&x.name)classIdByName.set(String(x.name).toLowerCase(),String(x.id))});classId=classIdByName.get(className.toLowerCase())||null}if(!classId)throw new Error('Kelas '+className+' belum tersedia pada database klub.');let sessions=p.id==='A'?4:p.id==='B'?8:p.id==='INT'?12:p.id==='PRE'?20:p.id==='PRI'?4:p.id==='KED'?8:0;let member='REG-'+Date.now().toString(36).toUpperCase();let payload={club_id:clubId,member_code:member,full_name:val('srName'),gender:val('srGender'),birth_place:val('srBirthPlace'),birth_date:val('srBirth'),school_name:val('srSchool'),class_id:classId,parent_name:val('srParent'),parent_phone:val('srPhone'),package_sessions:sessions,remaining_sessions:sessions,billing_mode:'session',billing_cycle_sessions:sessions,last_payment_date:nowISO(),join_date:nowISO(),status:'Aktif',training_fee:p.price,updated_at:new Date().toISOString()};let ins=await c.from('students').insert(payload);if(ins.error)throw ins.error;let ext={};if(val('srNick'))ext.nickname=val('srNick');if(val('srNisn'))ext.nisn=val('srNisn');ext.address=val('srAddress');ext.medical_history=val('srMedical');ext.parent_job=val('srParentJob');ext.parent_address=val('srParentAddress');try{let uq=await c.from('students').update(ext).eq('club_id',clubId).eq('member_code',member);if(uq.error)console.warn('Kolom tambahan belum tersedia:',uq.error.message)}catch(x){console.warn(x)}let photoPath='',proofPath='';const bucket='swimora-registration';try{const safeName=String(val('srName')).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50)||'calon-atlet';const photoExt=(photo.name.split('.').pop()||'jpg').toLowerCase();photoPath=clubId+'/'+member+'-'+safeName+'-foto.'+photoExt;let up=await c.storage.from(bucket).upload(photoPath,photo,{upsert:false,contentType:photo.type});if(up.error)throw new Error('Upload pas foto gagal: '+up.error.message);if(proof){const ext=(proof.name.split('.').pop()||'bin').toLowerCase();proofPath=clubId+'/'+member+'-'+safeName+'-bukti.'+ext;let up2=await c.storage.from(bucket).upload(proofPath,proof,{upsert:false,contentType:proof.type});if(up2.error)throw new Error('Upload bukti transfer gagal: '+up2.error.message)}}catch(uploadErr){console.error(uploadErr);try{await c.from('students').delete().eq('club_id',clubId).eq('member_code',member)}catch(_e){}throw uploadErr}ext.photo_path=photoPath;ext.payment_proof_path=proofPath;try{let uq2=await c.from('students').update(ext).eq('club_id',clubId).eq('member_code',member);if(uq2.error)console.warn('Kolom pendukung belum tersedia:',uq2.error.message)}catch(x){console.warn(x)}document.getElementById('sw18stage').innerHTML=success();scrollTo({top:0,behavior:'smooth'})}catch(err){console.error(err);toast('Pendaftaran belum tersimpan: '+(err?.message||err),'error')}finally{if(btn){btn.disabled=false;btn.innerHTML=old||'<span>Kirim Pendaftaran</span><b>→</b>'}}}
+async function submit(e){
+e.preventDefault();
+let p=selected||P.find(x=>x.id===val('srPackage'))||P[0];
+let photo=fileCheck('srPhoto',2*1024*1024,['image/jpeg','image/png','image/webp']);
+let proof=fileCheck('srProof',5*1024*1024,['image/jpeg','image/png','application/pdf']);
+if(!photo)return toast('Pas foto calon atlet wajib diunggah.','error');
+let c=getSupabaseClient();
+if(!c)return toast('Koneksi Supabase belum siap.','error');
+let btn=document.querySelector('.sw18-submit'),old=btn?.innerHTML;
+if(btn){btn.disabled=true;btn.innerHTML='<span>Menyimpan data atlet…</span><b>…</b>'}
+let member='REG-'+Date.now().toString(36).toUpperCase();
+try{
+  let clubId=club?.id;
+  if(!clubId){let q=await c.from('clubs').select('id').eq('code',club?.code||'TRUDGEN').maybeSingle();if(q.error)throw q.error;clubId=q.data?.id}
+  if(!clubId)throw new Error('Klub pendaftaran belum ditemukan di database.');
+  await loadClassMaps(c);
+  let names={A:'Pemula A',B:'Pemula B',INT:'Intermediate',PRE:'Prestasi',PRI:'Kelas Privat',KED:'Persiapan Tes Kedinasan'};
+  let className=names[p.id]||p.name;
+  let classId=classIdByName.get(className.toLowerCase())||null;
+  if(!classId){
+    let qr=await c.from('classes').select('id,name').eq('club_id',clubId).eq('active',true);
+    if(qr.error)throw qr.error;
+    (qr.data||[]).forEach(x=>{if(x.id&&x.name)classIdByName.set(String(x.name).toLowerCase(),String(x.id))});
+    classId=classIdByName.get(className.toLowerCase())||null;
+  }
+  if(!classId)throw new Error('Kelas '+className+' belum tersedia pada database klub. Buat/aktifkan kelas tersebut terlebih dahulu.');
+  let sessions=p.id==='A'?4:p.id==='B'?8:p.id==='INT'?12:p.id==='PRE'?20:p.id==='PRI'?4:p.id==='KED'?8:0;
+  let baseArgs=[clubId,classId,member,val('srName'),val('srNick'),val('srGender'),val('srBirthPlace'),val('srBirth'),val('srSchool'),val('srNisn'),val('srAddress'),val('srMedical'),val('srParent'),val('srParentJob'),val('srPhone'),val('srParentAddress'),sessions,p.price,'session',sessions];
+  let rpc=await c.rpc('submit_public_student_registration',{
+    p_club_id:baseArgs[0],p_class_id:baseArgs[1],p_member_code:baseArgs[2],p_full_name:baseArgs[3],p_nickname:baseArgs[4],p_gender:baseArgs[5],p_birth_place:baseArgs[6],p_birth_date:baseArgs[7],p_school_name:baseArgs[8],p_nisn:baseArgs[9],p_address:baseArgs[10],p_medical_history:baseArgs[11],p_parent_name:baseArgs[12],p_parent_job:baseArgs[13],p_parent_phone:baseArgs[14],p_parent_address:baseArgs[15],p_package_sessions:baseArgs[16],p_training_fee:baseArgs[17],p_billing_mode:baseArgs[18],p_billing_cycle_sessions:baseArgs[19]
+  });
+  if(rpc.error){
+    console.warn('RPC pendaftaran belum tersedia/gagal:',rpc.error.message);
+    /* Fallback untuk instalasi lama yang masih mengizinkan INSERT langsung. */
+    let payload={club_id:clubId,member_code:member,full_name:val('srName'),gender:val('srGender'),birth_place:val('srBirthPlace'),birth_date:val('srBirth'),school_name:val('srSchool'),class_id:classId,parent_name:val('srParent'),parent_phone:val('srPhone'),package_sessions:sessions,remaining_sessions:sessions,billing_mode:'session',billing_cycle_sessions:sessions,last_payment_date:nowISO(),join_date:nowISO(),status:'Aktif',training_fee:p.price,updated_at:new Date().toISOString()};
+    let ins=await c.from('students').insert(payload);
+    if(ins.error && /training_fee|column .* does not exist|could not find the .* column/i.test(String(ins.error.message||ins.error))){delete payload.training_fee;ins=await c.from('students').insert(payload)}
+    if(ins.error)throw new Error('Data atlet tidak dapat disimpan. '+ins.error.message);
+    let ext={nickname:val('srNick')||null,nisn:val('srNisn')||null,address:val('srAddress'),medical_history:val('srMedical'),parent_job:val('srParentJob')||null,parent_address:val('srParentAddress')||null};
+    try{await c.from('students').update(ext).eq('club_id',clubId).eq('member_code',member)}catch(_e){}
+  }
+  let photoPath='',proofPath='',uploadWarning='';
+  const bucket='swimora-registration';
+  try{
+    const safeName=String(val('srName')).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50)||'calon-atlet';
+    const photoExt=(photo.name.split('.').pop()||'jpg').toLowerCase();
+    photoPath=clubId+'/'+member+'-'+safeName+'-foto.'+photoExt;
+    let up=await c.storage.from(bucket).upload(photoPath,photo,{upsert:false,contentType:photo.type});
+    if(up.error)throw new Error('Upload pas foto gagal: '+up.error.message);
+    if(proof){const ext=(proof.name.split('.').pop()||'bin').toLowerCase();proofPath=clubId+'/'+member+'-'+safeName+'-bukti.'+ext;let up2=await c.storage.from(bucket).upload(proofPath,proof,{upsert:false,contentType:proof.type});if(up2.error)throw new Error('Upload bukti transfer gagal: '+up2.error.message)}
+    let uq=await c.from('students').update({photo_path:photoPath,payment_proof_path:proofPath}).eq('club_id',clubId).eq('member_code',member);
+    if(uq.error)uploadWarning='Data atlet sudah masuk, tetapi informasi file belum dapat ditautkan ke database.';
+  }catch(uploadErr){
+    console.error(uploadErr);
+    uploadWarning='Data atlet sudah masuk ke Data Siswa, tetapi file belum tersimpan. Admin dapat melengkapinya dari menu Data Siswa.';
+  }
+  document.getElementById('sw18stage').innerHTML=success();
+  if(uploadWarning)toast(uploadWarning,'error');
+  scrollTo({top:0,behavior:'smooth'});
+}catch(err){console.error(err);toast('Pendaftaran belum tersimpan: '+(err?.message||err),'error')}
+finally{if(btn){btn.disabled=false;btn.innerHTML=old||'<span>Kirim Pendaftaran</span><b>→</b>'}}
+}
 window.submitSwimoraPublicForm=submit;
 window.openPublicRegistration=async function(){document.documentElement.classList.add('sw18-public-mode');document.body.classList.add('sw18-public-mode');['loginView','appView'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));document.getElementById('publicRegisterView')?.classList.remove('hidden');let b=document.getElementById('publicRegisterBody');b.innerHTML='<div class="sw18-loading">Menyiapkan pendaftaran…</div>';await resolve();let logo=club?.logo_url||(typeof DEFAULT_LOGO!=='undefined'?DEFAULT_LOGO:'');b.innerHTML=`<div class="sw18-shell"><div class="sw18-wave a"></div><div class="sw18-wave b"></div><div class="sw18-wave c"></div><header><div class="sw18-brand"><img src="${escp(logo)}"><div><b>${escp(club?.name||'Trudgen Swimming Club')}</b><small>Swimming • Performance • Athlete Development</small></div></div><span>SWIMORA • Pendaftaran Online</span></header><main id="sw18stage">${intro()}</main><footer>Pendaftaran dikelola oleh ${escp(club?.name||'Trudgen Swimming Club')} melalui SWIMORA.</footer></div>`;scrollTo({top:0})};
 function css(){if(document.getElementById('sw18-v2-css'))return;let s=document.createElement('style');s.id='sw18-v2-css';s.textContent=`
