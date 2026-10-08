@@ -3991,10 +3991,18 @@ function tenantStateKey(club){
 }
 function tenantLabel(club){return club?`Tenant #${String(Number(club.tenant_no)||0).padStart(3,'0')} • ${club.name}`:'Tenant belum dipilih'}
 
+const SWIMORA_SUPER_ADMIN_EMAILS=['azzahidahsetyamandiri@gmail.com'];
 async function getCurrentPlatformAdmin(client,user){
-  const {data,error}=await client.from('platform_admins').select('role,is_active').eq('user_id',user.id).eq('is_active',true).maybeSingle();
-  if(error && !/0 rows|multiple/i.test(String(error.message||''))) console.warn('platform_admins check',error);
-  return data?.role==='super_admin' && data?.is_active!==false;
+  if(!user)return false;
+  const email=String(user.email||'').trim().toLowerCase();
+  try{
+    const {data,error}=await client.from('platform_admins').select('role,is_active').eq('user_id',user.id).eq('is_active',true).maybeSingle();
+    if(!error && data?.role==='super_admin' && data?.is_active!==false)return true;
+    if(error)console.warn('platform_admins check:',error);
+  }catch(e){console.warn('platform_admins check exception:',e)}
+  // Backward-compatible fallback for the existing SWIMORA platform owner.
+  // Authentication is still required by Supabase; this only restores the role mapping.
+  return SWIMORA_SUPER_ADMIN_EMAILS.includes(email);
 }
 
 async function getUserClubMemberships(client,user){
@@ -4301,10 +4309,20 @@ async function login(e){
   if(!client){return toast('Koneksi Supabase aplikasi belum siap.','error');}
   const submitBtn=e.submitter||document.querySelector('#loginForm button[type="submit"]'),oldText=submitBtn?.textContent;if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Memeriksa akun & role...';}
   try{
-    const {data,error}=await client.auth.signInWithPassword({email,password});if(error)throw error;if(!data?.user)throw new Error('Sesi login tidak terbentuk.');
-    platformUserEmail=data.user.email||email;platformAdminSession=await getCurrentPlatformAdmin(client,data.user);
-    if(platformAdminSession){showSuperAdminView(platformUserEmail);const st=document.getElementById('loginSupabaseStatus');if(st)st.innerHTML='<b style="color:#138458">Super Admin berhasil login.</b>';toast('Selamat datang di Dashboard Super Admin SWIMORA.');return;}
-    const memberships=await getUserClubMemberships(client,data.user);if(!memberships.length)throw new Error('Akun berhasil login, tetapi belum terhubung ke tenant aktif. Hubungi Super Admin SWIMORA.');
+    const {data,error}=await client.auth.signInWithPassword({email,password});
+    if(error)throw error;
+    if(!data?.user)throw new Error('Sesi login tidak terbentuk.');
+    platformUserEmail=data.user.email||email;
+    platformAdminSession=await getCurrentPlatformAdmin(client,data.user);
+    if(platformAdminSession){
+      showSuperAdminView(platformUserEmail);
+      const st=document.getElementById('loginSupabaseStatus');
+      if(st)st.innerHTML='<b style="color:#138458">Super Admin berhasil login.</b>';
+      toast('Selamat datang di Dashboard Super Admin SWIMORA.');
+      return;
+    }
+    const memberships=await getUserClubMemberships(client,data.user);
+    if(!memberships.length)throw new Error('Password benar, tetapi akun belum dikenali sebagai Super Admin dan belum terhubung ke tenant aktif. Jika ini akun Super Admin lama, gunakan file SWIMORA V17.5 SUPERADMIN LOGIN FIX atau periksa tabel platform_admins.');
     const chosen=memberships[0].club;await loadTenantConfiguration(client,chosen);currentRole='admin';cloudStateLoaded=false;
     await loadStudentsFromSupabase(false);await loadClubStateFromSupabase(false);enterApp('dashboard');updateTenantUI();
     const st=document.getElementById('loginSupabaseStatus');if(st)st.innerHTML=`<b style="color:#138458">Login berhasil.</b> ${esc(tenantLabel(chosen))}`;toast(`Masuk ke ${tenantLabel(chosen)}.`);
