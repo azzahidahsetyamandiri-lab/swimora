@@ -19941,5 +19941,238 @@ setTimeout(mountPlatformLogo,50);setTimeout(mountPlatformLogo,500);
 })();
 </script>
 
+
+<script>
+/* ================================================================
+   SWIMORA V17.2 — SCANNER ROI + SPORT SCIENCE TRAINING ENGINE
+   Scanner: barcode is decoded only from the central focus ROI.
+   Training: class pathway follows developmental readiness, not age alone.
+   References: Swimming Australia Swimmer Framework / FTEM-informed pathway.
+   ================================================================ */
+(function(){
+  'use strict';
+
+  /* ---------- 1. BARCODE CAMERA: STRICT FOCUS ROI ---------- */
+  window.startProfessionalScanner=async function(){
+    const video=document.getElementById('cameraFeed');
+    const status=document.getElementById('scannerStatus');
+    if(!video)return;
+    pendingBarcodeStudentId='';
+    if(!('BarcodeDetector' in window)){
+      if(status)status.textContent='Browser tidak mendukung BarcodeDetector. Gunakan Input ID sebagai fallback.';
+      return;
+    }
+    try{
+      scannerStream=await navigator.mediaDevices.getUserMedia({
+        video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080},focusMode:{ideal:'continuous'}},
+        audio:false
+      });
+      video.srcObject=scannerStream;
+      await video.play();
+      const track=scannerStream.getVideoTracks?.()[0];
+      try{await track?.applyConstraints({advanced:[{focusMode:'continuous'}]})}catch(_e){}
+
+      const detector=new BarcodeDetector({formats:['qr_code','code_128','code_39','code_93','ean_13','ean_8','upc_a']});
+      const canvas=document.createElement('canvas');
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});
+      let busy=false,lastValue='',stableCount=0,lastCandidate='';
+
+      /* ROI = only the central box. The rest of the camera frame is ignored. */
+      const getROI=()=>{
+        const vw=video.videoWidth||1280, vh=video.videoHeight||720;
+        const roiW=Math.round(vw*0.68), roiH=Math.round(vh*0.30);
+        const sx=Math.round((vw-roiW)/2), sy=Math.round((vh-roiH)/2);
+        return {sx,sy,sw:roiW,sh:roiH};
+      };
+
+      const scan=async()=>{
+        if(!document.getElementById('cameraFeed')||pendingBarcodeStudentId)return;
+        try{
+          const roi=getROI();
+          canvas.width=roi.sw;canvas.height=roi.sh;
+          ctx.drawImage(video,roi.sx,roi.sy,roi.sw,roi.sh,0,0,roi.sw,roi.sh);
+          const codes=await detector.detect(canvas);
+          const value=codes?.[0]?.rawValue?.trim()||'';
+          if(value){
+            const candidate=value.toUpperCase();
+            if(candidate===lastCandidate)stableCount++;else{lastCandidate=candidate;stableCount=1}
+            /* Require two consecutive reads to avoid accidental one-frame matches. */
+            if(stableCount>=2&&!busy){
+              busy=true;lastValue=value;
+              const s=db.students.find(x=>String(x.id||'').toUpperCase()===candidate||String(x.memberCode||'').toUpperCase()===candidate);
+              if(!s){
+                if(status)status.textContent='Barcode terbaca di dalam kotak, tetapi ID siswa tidak ditemukan.';
+                stableCount=0;lastCandidate='';
+                setTimeout(()=>{busy=false},900);
+              }else{
+                pendingBarcodeStudentId=s.id;
+                stopScanner();
+                const result=document.getElementById('scannerResult');
+                if(result)result.innerHTML='<b>'+esc(s.name)+'</b> <span class="muted">• '+esc(s.id)+'</span>';
+                if(status)status.textContent='Barcode valid di area fokus. Periksa nama lalu tekan “Simpan Kehadiran”.';
+                document.getElementById('savePendingAttendanceBtn')?.removeAttribute('hidden');
+                document.getElementById('cancelPendingAttendanceBtn')?.removeAttribute('hidden');
+              }
+            }
+          }else{
+            stableCount=0;lastCandidate='';
+            if(status)status.textContent='Arahkan BARCODE/QR tepat ke kotak fokus. Area di luar kotak tidak dipindai.';
+          }
+        }catch(err){
+          if(status)status.textContent='Arahkan barcode tepat ke kotak fokus. '+(err?.message||'');
+        }
+        if(!pendingBarcodeStudentId)requestAnimationFrame(scan);
+      };
+      if(status)status.textContent='Kamera aktif. Hanya area kotak fokus yang dibaca.';
+      requestAnimationFrame(scan);
+    }catch(err){
+      if(status)status.textContent='Kamera tidak dapat dibuka: '+(err?.message||'izin ditolak')+'. Gunakan Input ID sebagai fallback.';
+    }
+  };
+
+  const scannerStyle=document.createElement('style');
+  scannerStyle.textContent=`
+    .scanner-camera-stage{position:relative;overflow:hidden;border-radius:18px;background:#071a2b;min-height:300px}
+    .scanner-camera-stage video{width:100%;height:auto;display:block;object-fit:cover;background:#000}
+    .scanner-focus-box{position:absolute;left:16%;width:68%;top:35%;height:30%;border:3px solid #b8f13e;border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,.34),0 0 22px rgba(184,241,62,.28);pointer-events:none}
+    .scanner-focus-box:before,.scanner-focus-box:after{content:"";position:absolute;width:24px;height:24px;border-color:#fff;border-style:solid;opacity:.9}
+    .scanner-focus-box:before{left:-3px;top:-3px;border-width:4px 0 0 4px;border-radius:10px 0 0 0}
+    .scanner-focus-box:after{right:-3px;bottom:-3px;border-width:0 4px 4px 0;border-radius:0 0 10px 0}
+    .scanner-focus-line{position:absolute;left:18%;width:64%;top:50%;height:2px;background:#b8f13e;box-shadow:0 0 12px #b8f13e;opacity:.85;animation:swScanLine 1.8s ease-in-out infinite}
+    .scanner-camera-hint{position:absolute;left:0;right:0;bottom:10px;text-align:center;color:#fff;font-size:11px;font-weight:700;text-shadow:0 1px 4px #000;pointer-events:none}
+    @keyframes swScanLine{0%,100%{transform:translateY(-35px);opacity:.35}50%{transform:translateY(35px);opacity:1}}
+  `;
+  document.head.appendChild(scannerStyle);
+
+  /* ---------- 2. SPORT-SCIENCE CLASS FRAMEWORK ---------- */
+  const FRAMEWORK={
+    'Pemula A':{
+      stage:'LEARN — Skill Acquisition & Water Competence',
+      rationale:'Fondasi keselamatan air, physical literacy, body position, breathing, propulsion dan koordinasi. Tidak menggunakan threshold/lactate sebagai sasaran utama.',
+      emphasis:['Water competence & safety','Breathing control','Floating / streamline / bodyline','Fundamental movement & propulsion','Basic freestyle / backstroke / breaststroke exposure','Fun + simple speed','Observation-based technique feedback'],
+      avoid:['Formal lactate/threshold sets','Chasing PB as primary outcome','High-volume repetitive training','Early peaking/taper'],
+      sessionMinutes:[45,60],volumeUnits:[8,12],
+      themes:['water-skill','breathing','stroke-skill','play-speed']
+    },
+    'Pemula B':{
+      stage:'BUILD — Stroke Foundation & Basic Aerobic Development',
+      rationale:'Memperkuat teknik dan koordinasi empat gaya secara bertahap, mulai membangun aerobic foundation dan simple speed tanpa menjadikan anaerobic/lactate sebagai pusat program.',
+      emphasis:['Stroke mechanics & coordination','Breathing rhythm','Streamline / push-off / basic turns','Aerobic foundation','Simple speed / neuromuscular quality','Movement variety & physical literacy','Consistency of technique'],
+      avoid:['Aggressive threshold loading','Early specialization','High lactate density','Performance ranking as the main objective'],
+      sessionMinutes:[55,70],volumeUnits:[12,22],
+      themes:['technique','aerobic-foundation','speed-skill','mixed-stroke']
+    },
+    'Intermediate':{
+      stage:'DEVELOP — Technique + AEC + Speed + Introductory ANC',
+      rationale:'Atlet sudah memiliki empat gaya fungsional. Program mulai terstruktur: technical refinement, aerobic development/capacity, speed dan pengenalan anaerobic development dengan progressive overload.',
+      emphasis:['Technical efficiency','AEC / aerobic development','Aerobic power introduction','Speed & neuromuscular quality','Introductory ANC / speed endurance','Underwater / breakout / turns','Stroke count + stroke rate awareness','Progressive training history'],
+      avoid:['Blind volume increases','Maximal work every session','Tapering without competition rationale'],
+      sessionMinutes:[70,90],volumeUnits:[22,48],
+      themes:['technique-aec','aerobic','speed','anc-intro','race-skills']
+    },
+    'Prestasi':{
+      stage:'PERFORM — Individual Event Demands & Performance Development',
+      rationale:'Program harus individual: nomor lomba, PB, target, training age, frekuensi latihan, training load, recovery, technical limitation dan kalender kompetisi menentukan dosis.',
+      emphasis:['Event-specific demands','PB / target time','AEC + aerobic power','ANC / speed endurance','Race pace','Start / turn / breakout / finish','Training load & recovery','Race analysis','Periodization only when justified'],
+      avoid:['One-size-fits-all program','Automatic peak for every athlete','Using age alone to prescribe load','Ignoring previous-week load'],
+      sessionMinutes:[80,120],volumeUnits:[36,100],
+      themes:['aec','aerobic-power','race-pace','anc','speed-power','event-specific']
+    }
+  };
+  window.SWIMORA_SPORT_SCIENCE_FRAMEWORK=FRAMEWORK;
+
+  function classKey(cls){
+    const c=String(cls||'').toLowerCase();
+    if(c.includes('pemula a'))return'Pemula A';
+    if(c.includes('pemula b'))return'Pemula B';
+    if(c.includes('intermediate'))return'Intermediate';
+    if(c.includes('prestasi'))return'Prestasi';
+    return'Pemula A';
+  }
+  window.swimoraClassFramework=function(cls){return FRAMEWORK[classKey(cls)]};
+
+  /* Replace the generic class generator with a developmental microcycle. */
+  window.autoProgramForClass=function(cls,date){
+    const key=classKey(cls),f=FRAMEWORK[key];
+    const d=new Date(date+'T00:00:00');
+    const week=weekOfYear(d),day=Math.max(0,(d.getDay()+6)%7);
+    const phase=((week-1)%4)+1;
+    const theme=f.themes[(week+day+phase)%f.themes.length];
+    const pool=poolWidthMeters();
+    let sets=[],focus='',duration=f.sessionMinutes[0]+Math.min(20,(phase-1)*5),units=f.volumeUnits[0]+Math.round((f.volumeUnits[1]-f.volumeUnits[0])*(phase-1)/3);
+
+    if(key==='Pemula A'){
+      const map={
+        'water-skill':['Water Competence & Bodyline',[`Warm-up ${Math.max(2,Math.round(units*.2))} × ${pool} m easy / permainan air`,`Skill ${Math.max(2,Math.round(units*.25))} × ${pool} m: floating → streamline → push-off`,`Main ${Math.max(3,Math.round(units*.3))} × ${pool} m: pilihan bebas/punggung dengan teknik rapi`,`Skill: bubble-breathing, exhale underwater, safe stop & turn`,`Cool-down ${Math.max(2,Math.round(units*.15))} × ${pool} m easy`]],
+        'breathing':['Breathing & Basic Propulsion',[`Warm-up ${Math.max(2,Math.round(units*.2))} × ${pool} m easy`,`Drill ${Math.max(3,Math.round(units*.25))} × ${pool} m: bubble + side breathing`,`Main ${Math.max(3,Math.round(units*.3))} × ${pool} m: freestyle dasar, repetisi pendek`,`Skill: bodyline + napas tanpa mengangkat kepala`,`Cool-down ${Math.max(2,Math.round(units*.15))} × ${pool} m`]],
+        'stroke-skill':['Stroke Foundation',[`Warm-up ${Math.max(2,Math.round(units*.2))} × ${pool} m easy`,`Drill: kick + arm action ${Math.max(3,Math.round(units*.25))} × ${pool} m`,`Main ${Math.max(3,Math.round(units*.3))} × ${pool} m: free/back/breast sesuai kesiapan`,`Skill: koordinasi tangan-kaki dan wall push-off`,`Cool-down ${Math.max(2,Math.round(units*.15))} × ${pool} m`]],
+        'play-speed':['Simple Speed & Movement',[`Warm-up ${Math.max(2,Math.round(units*.2))} × ${pool} m`,`Skill game: reaction / chase / relay pendek`,`Speed: 6–10 × 10–15 m cepat-teknis, recovery penuh`,`Main ${Math.max(3,Math.round(units*.25))} × ${pool} m easy-moderate`,`Cool-down ${Math.max(2,Math.round(units*.15))} × ${pool} m`]]
+      };
+      [focus,sets]=map[theme]||map['water-skill'];
+    }else if(key==='Pemula B'){
+      const map={
+        technique:['Stroke Coordination',[`Warm-up ${Math.max(3,Math.round(units*.18))} × ${pool} m easy`,`Drill ${Math.max(4,Math.round(units*.24))} × ${pool} m: bodyline/catch/kick`,`Main ${Math.max(4,Math.round(units*.32))} × ${pool} m: free/back/breast teknik`,`Skill: streamline + basic turn`,`Cool-down ${Math.max(2,Math.round(units*.14))} × ${pool} m`]],
+        'aerobic-foundation':['Aerobic Foundation',[`Warm-up ${Math.max(3,Math.round(units*.18))} × ${pool} m`,`Drill ${Math.max(3,Math.round(units*.18))} × ${pool} m`,`Main ${Math.max(5,Math.round(units*.38))} × ${pool} m easy–moderate, rest 20–30 dtk`,`Skill: negative split ringan tanpa merusak teknik`,`Cool-down ${Math.max(2,Math.round(units*.14))} × ${pool} m`]],
+        'speed-skill':['Simple Speed',[`Warm-up ${Math.max(3,Math.round(units*.18))} × ${pool} m`,`Drill ${Math.max(3,Math.round(units*.18))} × ${pool} m`,`Speed: 6–8 × 15 m fast technical, recovery 45–60 dtk`,`Main ${Math.max(5,Math.round(units*.32))} × ${pool} m easy-moderate`,`Cool-down ${Math.max(2,Math.round(units*.14))} × ${pool} m`]],
+        'mixed-stroke':['Four-Stroke Foundation',[`Warm-up ${Math.max(3,Math.round(units*.18))} × ${pool} m mixed`,`Drill: fly kick / back / breast / free sesuai kesiapan`,`Main ${Math.max(4,Math.round(units*.35))} × ${pool} m mixed stroke`,`Skill: turns, finishes & streamline`,`Cool-down ${Math.max(2,Math.round(units*.14))} × ${pool} m`]]
+      };
+      [focus,sets]=map[theme]||map.technique;
+    }else if(key==='Intermediate'){
+      const map={
+        'technique-aec':['Technique + Aerobic Development',[`Warm-up ${Math.max(4,Math.round(units*.16))} × ${pool} m`,`Technical block: 4 × ${pool} m per stroke / drill`,`Main aerobic: ${Math.max(6,Math.round(units*.38))} × ${pool} m @ RPE 4–6`,`Quality: stroke count + breakout consistency`,`Cool-down ${Math.max(3,Math.round(units*.12))} × ${pool} m`]],
+        aerobic:['Aerobic Capacity',[`Warm-up ${Math.max(4,Math.round(units*.16))} × ${pool} m`,`Drill/build ${Math.max(4,Math.round(units*.16))} × ${pool} m`,`Main: ${Math.max(6,Math.round(units*.42))} × ${pool} m @ RPE 5–7, rest 20–40 dtk`,`Quality: negative split / pace control`,`Cool-down ${Math.max(3,Math.round(units*.12))} × ${pool} m`]],
+        speed:['Speed + Neuromuscular',[`Warm-up ${Math.max(4,Math.round(units*.16))} × ${pool} m`,`Drill/build ${Math.max(4,Math.round(units*.16))} × ${pool} m`,`Speed: 8 × 15–25 m high quality, full recovery`,`Main aerobic support ${Math.max(6,Math.round(units*.35))} × ${pool} m @ RPE 4–6`,`Cool-down ${Math.max(3,Math.round(units*.12))} × ${pool} m`]],
+        'anc-intro':['Introductory Anaerobic Development',[`Warm-up ${Math.max(5,Math.round(units*.18))} × ${pool} m`,`Technical preparation ${Math.max(4,Math.round(units*.14))} × ${pool} m`,`Main: 6–10 × 25–50 m high quality @ RPE 8, recovery 1:30–3:00`,`Aerobic recovery ${Math.max(5,Math.round(units*.25))} × ${pool} m easy`,`Cool-down ${Math.max(3,Math.round(units*.10))} × ${pool} m`]],
+        'race-skills':['Racing Skills + Pace',[`Warm-up ${Math.max(4,Math.round(units*.16))} × ${pool} m`,`Starts/turns/breakout: 6–10 quality repetitions`,`Main pace: ${Math.max(5,Math.round(units*.32))} × ${pool} m @ controlled race-oriented RPE 7–8`,`Technical review: stroke count / SR / finish`,`Cool-down ${Math.max(3,Math.round(units*.12))} × ${pool} m`]]
+      };
+      [focus,sets]=map[theme]||map['technique-aec'];
+    }else{
+      const pbRace=timingRacesForStudent?.(db.students?.find(x=>x.class===key))?.[0]||'';
+      const map={
+        aec:['AEC / Aerobic Development',[`Warm-up ${Math.max(6,Math.round(units*.14))} × ${pool} m`,`Technical preparation ${Math.max(5,Math.round(units*.12))} × ${pool} m`,`Main aerobic: ${Math.max(8,Math.round(units*.42))} × ${pool} m @ RPE 5–7`,`Quality: stroke efficiency under fatigue`,`Cool-down ${Math.max(4,Math.round(units*.10))} × ${pool} m`]],
+        'aerobic-power':['Aerobic Power',[`Warm-up ${Math.max(6,Math.round(units*.14))} × ${pool} m`,`Build ${Math.max(5,Math.round(units*.12))} × ${pool} m`,`Main: ${Math.max(6,Math.round(units*.32))} × ${pool} m @ RPE 7–8, controlled recovery`,`Quality: pace repeatability`,`Cool-down ${Math.max(4,Math.round(units*.10))} × ${pool} m`]],
+        'race-pace':['Race Pace Development',[`Warm-up ${Math.max(6,Math.round(units*.14))} × ${pool} m`,`Race-skill prep: starts / turn / breakout`,`Main: broken race-pace sets based on primary event/PB; quality > quantity`,`Recovery aerobic ${Math.max(5,Math.round(units*.22))} × ${pool} m`,`Cool-down ${Math.max(4,Math.round(units*.10))} × ${pool} m`]],
+        anc:['ANC / Speed Endurance',[`Warm-up ${Math.max(6,Math.round(units*.14))} × ${pool} m`,`Technical prep + build ${Math.max(5,Math.round(units*.12))} × ${pool} m`,`Main: 4–8 high-quality repetitions 25–100 m @ RPE 8–9, full/controlled recovery sesuai nomor`,`Aerobic recovery ${Math.max(5,Math.round(units*.22))} × ${pool} m`,`Cool-down ${Math.max(4,Math.round(units*.10))} × ${pool} m`]],
+        'speed-power':['Speed / Power',[`Warm-up ${Math.max(6,Math.round(units*.14))} × ${pool} m`,`Activation + technical build`,`Speed: 6–10 × 15–25 m maximal technical quality, full recovery`,`Main aerobic support ${Math.max(6,Math.round(units*.30))} × ${pool} m`,`Cool-down ${Math.max(4,Math.round(units*.10))} × ${pool} m`]],
+        'event-specific':['Event-Specific Session',[`Warm-up ${Math.max(6,Math.round(units*.14))} × ${pool} m`,`Event skill: start/turn/breakout according to primary event`,`Main: event-specific pace / energy demand based on PB and target when athlete data are available`,`Race analysis: split / stroke rate / stroke count / finish`,`Cool-down ${Math.max(4,Math.round(units*.10))} × ${pool} m`]]
+      };
+      [focus,sets]=map[theme]||map.aec;
+      if(pbRace)focus+=' • PB/event data tersedia';
+    }
+    const totalWidths=Math.max(4,units);
+    return {class:cls,date,focus:`${focus} • Phase ${phase}`,volume:totalWidths*pool,totalWidths,poolWidth:pool,duration,sets,
+      sportScience:{stage:f.stage,rationale:f.rationale,emphasis:f.emphasis,avoid:f.avoid,theme,phase,developmentalRule:'Development before performance; load progresses from athlete readiness and training history.'}};
+  };
+
+  /* Volume profile now describes a range, not a rigid prescription. */
+  window.classVolumeProfile=function(s){
+    const key=classKey(s?.class);
+    const map={
+      'Pemula A':{label:key,start:200,max:600,unit:'m/session-range',rule:'Skill quality first; volume is secondary.'},
+      'Pemula B':{label:key,start:300,max:900,unit:'m/session-range',rule:'Technique + basic aerobic foundation.'},
+      'Intermediate':{label:key,start:700,max:1800,unit:'m/session-range',rule:'Progressive AEC + speed + introductory ANC.'},
+      'Prestasi':{label:key,start:1200,max:3500,unit:'m/session-range',rule:'Individualize by event, PB, frequency, training age and load history.'}
+    };
+    return map[key];
+  };
+  try{classVolumeProfile=window.classVolumeProfile}catch(_e){}
+
+  /* Add a concise science rationale to the program UI when available. */
+  const oldRenderPrograms=window.renderPrograms;
+  window.renderPrograms=function(){
+    oldRenderPrograms?.apply(this,arguments);
+    try{
+      const cls=document.getElementById('programClass')?.value||classes?.[0];
+      const p=window.swimoraClassFramework(cls),el=document.getElementById('programContainer');
+      if(!p||!el)return;
+      const old=el.querySelector('.sw-science-panel');
+      if(old)old.remove();
+      const panel=document.createElement('div');panel.className='card sw-science-panel';
+      panel.innerHTML='<div class="card-head"><div><h3>Sport Science Logic • '+E(p.stage)+'</h3><p>'+E(p.rationale)+'</p></div></div><div class="report-indicator-list">'+p.emphasis.map(x=>'<span>'+E(x)+'</span>').join('')+'</div><div class="small muted" style="margin-top:10px"><b>Bukan fokus utama:</b> '+E(p.avoid.join(' • '))+'</div>';
+      el.appendChild(panel);
+    }catch(_e){}
+  };
+})();
+</script>
 </body>
 </html>
