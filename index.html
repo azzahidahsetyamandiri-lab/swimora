@@ -3874,8 +3874,7 @@ function printStudentCard(id){const s=student(id),logo=currentClubLogo();if(!s)r
 <style>
 #loginSupabaseSetup,.supabase-login-settings,.connection-settings{display:none!important;}
 </style>
-</head><body><div class="card"><div class="head"><div class="brand"><img src="${logo}"><div><b>TRUDGEN<br>SWIMMING CLUB</b><span>OFFICIAL MEMBER CARD</span></div></div><div style="text-align:right;font-size:6px"><span style="opacity:.55">MEMBER ID</span><br><b>${s.id}</b></div></div><div class="body"><div><div class="name">${esc(s.name)}</div><div class="class-pill">${esc(s.class||'Siswa')}</div><div class="bio"><div class="bio-row"><span>Nama</span><b>${esc(s.name)}</b></div><div class="bio-row"><span>TTL</span><b>${esc(ttl)}</b></div><div class="bio-row"><span>Asal Sekolah</span><b>${esc(school)}</b></div></div></div><div class="qr"><div id="printMemberQR"></div><div class="code">${s.id}</div></div></div><div class="foot"><span>Scan QR untuk absensi</span><span>Trudgen SC • Kota Serang</span></div></div><script>window.onload=function(){new QRCode(document.getElementById('printMemberQR'),{text:${JSON.stringify(s.id)},width:84,height:84,colorDark:'#071a2d',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});setTimeout(function(){window.print()},250)}<\/script>
-</body></html>`);w.document.close()}
+</head><body><div class="card"><div class="head"><div class="brand"><img src="${logo}"><div><b>TRUDGEN<br>SWIMMING CLUB</b><span>OFFICIAL MEMBER CARD</span></div></div><div style="text-align:right;font-size:6px"><span style="opacity:.55">MEMBER ID</span><br><b>${s.id}</b></div></div><div class="body"><div><div class="name">${esc(s.name)}</div><div class="class-pill">${esc(s.class||'Siswa')}</div><div class="bio"><div class="bio-row"><span>Nama</span><b>${esc(s.name)}</b></div><div class="bio-row"><span>TTL</span><b>${esc(ttl)}</b></div><div class="bio-row"><span>Asal Sekolah</span><b>${esc(school)}</b></div></div></div><div class="qr"><div id="printMemberQR"></div><div class="code">${s.id}</div></div></div><div class="foot"><span>Scan QR untuk absensi</span><span>Trudgen SC • Kota Serang</span></div></div><script>window.onload=function(){new QRCode(document.getElementById('printMemberQR'),{text:${JSON.stringify(s.id)},width:84,height:84,colorDark:'#071a2d',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});setTimeout(function(){window.print()},250)}<\/script></body></html>`);w.document.close()}
 function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
 
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
@@ -3908,16 +3907,12 @@ function printableShell(title,content,autoPrint=true){const st=db.settings||{},l
 <style>
 #loginSupabaseSetup,.supabase-login-settings,.connection-settings{display:none!important;}
 </style>
-</head><body><div class="print-wrap"><div class="official-head"><img class="official-logo" src="${logo}" alt="Logo Trudgen Swimming Club"><div class="official-copy"><div class="foundation">${esc(st.foundation||'YAYASAN AZZAHIDAH SETYA MANDIRI')}</div><div class="club">${esc(st.clubName||'TRUDGEN SWIMMING CLUB')}</div><div class="tagline">${esc(st.tagline||'Les dan Privat Renang Kota Serang')}</div><div class="address">Alamat : ${esc(st.address||'Kavling tower-Sepang Masjid RT 002/RW 001, Kel. Sepang, Kec. Taktakan-Kota Serang.')}${st.phone?` • Kontak: ${esc(st.phone)}`:''}</div></div><div></div></div><div class="doc-head"><h1>${esc(title)}</h1><div class="doc-meta">Dicetak ${new Date().toLocaleString('id-ID')}<br>Administrasi Trudgen Swimming Club</div></div>${content}</div>${autoPrint?'<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>':''}
-</body></html>`}
+</head><body><div class="print-wrap"><div class="official-head"><img class="official-logo" src="${logo}" alt="Logo Trudgen Swimming Club"><div class="official-copy"><div class="foundation">${esc(st.foundation||'YAYASAN AZZAHIDAH SETYA MANDIRI')}</div><div class="club">${esc(st.clubName||'TRUDGEN SWIMMING CLUB')}</div><div class="tagline">${esc(st.tagline||'Les dan Privat Renang Kota Serang')}</div><div class="address">Alamat : ${esc(st.address||'Kavling tower-Sepang Masjid RT 002/RW 001, Kel. Sepang, Kec. Taktakan-Kota Serang.')}${st.phone?` • Kontak: ${esc(st.phone)}`:''}</div></div><div></div></div><div class="doc-head"><h1>${esc(title)}</h1><div class="doc-meta">Dicetak ${new Date().toLocaleString('id-ID')}<br>Administrasi Trudgen Swimming Club</div></div>${content}</div>${autoPrint?'<script>window.onload=()=>setTimeout(()=>window.print(),250)<\/script>':''}</body></html>`}
 function openPrint(title,content){const w=window.open('','_blank');if(!w){toast('Popup diblokir browser. Izinkan popup untuk mencetak.','error');return}w.document.write(printableShell(title,content));w.document.close()}
 function printElement(id,title){const html=document.getElementById(id)?.outerHTML||'';openPrint(title,html)}
 function tableHTML(headers,rows){return`<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`}
-function studentCardBatchHTML(ids){const logo=currentClubLogo();const cards=ids.map(id=>{const s=student(id);if(!s)return'';return`<article class="batch-id-card"><div class="batch-card-head"><img src="${logo}"><div><b>TRUDGEN<br>SWIMMING CLUB</b><span>OFFICIAL MEMBER CARD</span></div><strong>${esc(s.id)}</strong></div><div class="batch-card-body"><div><h1>${esc(s.name)}</h1><b class="batch-class">${esc(s.class||'Siswa')}</b><p><b>TTL</b> ${esc(studentTTLText(s))}</p><p><b>Sekolah</b> ${esc(studentSchoolText(s))}</p><p><b>Orang Tua</b> ${esc(s.parent||'-')}</p></div><div class="batch-qr"><div id="qr-${esc(s.id)}"></div><small>${esc(s.id)}</small></div></div><footer>Scan QR untuk absensi • Les & Privat Renang Kota Serang</footer></article>`}).join('');return`<!doctype html><html><head><meta charset="utf-8"><title>ID Card Siswa</title><style>*{box-sizing:border-box}html,body{margin:0;background:#e8eef2;font-family:Arial,sans-serif;color:white}.batch-id-card{width:100vw;min-height:100vh;padding:28mm 24mm;background:linear-gradient(135deg,#06192d,#0a4469 55%,#0d7291);page-break-after:always;display:flex;flex-direction:column;justify-content:space-between}.batch-card-head{display:flex;align-items:center;gap:16px;border-bottom:1px solid rgba(255,255,255,.25);padding-bottom:18px}.batch-card-head img{width:74px;height:74px;border-radius:18px;object-fit:cover}.batch-card-head b{font-size:26px;line-height:1.05}.batch-card-head span{display:block;font-size:11px;letter-spacing:2px;opacity:.7;margin-top:8px}.batch-card-head strong{margin-left:auto;font-size:22px}.batch-card-body{display:grid;grid-template-columns:1fr 220px;gap:30px;align-items:center}.batch-card-body h1{font-size:42px;margin:0 0 20px}.batch-card-body p{font-size:20px;margin:14px 0;color:rgba(255,255,255,.8)}.batch-card-body p b{display:inline-block;width:120px;color:#b8f13e}.batch-class{display:inline-block;padding:10px 15px;border-radius:99px;background:rgba(255,255,255,.15);font-size:16px}.batch-qr{background:white;border-radius:18px;padding:18px;text-align:center;color:#071a2d}.batch-qr small{display:block;margin-top:8px;font-weight:bold}.batch-card-body footer,footer{font-size:14px;opacity:.75}@page{size:A4;margin:0}@media print{html,body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.batch-id-card{height:297mm;min-height:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}@media(max-width:700px){.batch-id-card{padding:18mm 12mm}.batch-card-body{grid-template-columns:1fr}.batch-card-body h1{font-size:30px}.batch-card-body p{font-size:16px}.batch-qr{width:190px}}</style></head><body>${cards}<script>window.onload=()=>{${ids.map(id=>`new QRCode(document.getElementById('qr-${id}'),{text:${JSON.stringify(id)},width:170,height:170,colorDark:'#071a2d',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});`).join('')}}<\/script>
-</body></html>`}
-function printStudentCards(ids){const list=(ids||db.students.map(s=>s.id)).filter(Boolean);if(!list.length)return toast('Belum ada data siswa.','error');const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser.','error');w.document.write(studentCardBatchHTML(list).replace('
-</body>','<script>setTimeout(()=>window.print(),700)<\/script>
-</body>'));w.document.close()}
+function studentCardBatchHTML(ids){const logo=currentClubLogo();const cards=ids.map(id=>{const s=student(id);if(!s)return'';return`<article class="batch-id-card"><div class="batch-card-head"><img src="${logo}"><div><b>TRUDGEN<br>SWIMMING CLUB</b><span>OFFICIAL MEMBER CARD</span></div><strong>${esc(s.id)}</strong></div><div class="batch-card-body"><div><h1>${esc(s.name)}</h1><b class="batch-class">${esc(s.class||'Siswa')}</b><p><b>TTL</b> ${esc(studentTTLText(s))}</p><p><b>Sekolah</b> ${esc(studentSchoolText(s))}</p><p><b>Orang Tua</b> ${esc(s.parent||'-')}</p></div><div class="batch-qr"><div id="qr-${esc(s.id)}"></div><small>${esc(s.id)}</small></div></div><footer>Scan QR untuk absensi • Les & Privat Renang Kota Serang</footer></article>`}).join('');return`<!doctype html><html><head><meta charset="utf-8"><title>ID Card Siswa</title><style>*{box-sizing:border-box}html,body{margin:0;background:#e8eef2;font-family:Arial,sans-serif;color:white}.batch-id-card{width:100vw;min-height:100vh;padding:28mm 24mm;background:linear-gradient(135deg,#06192d,#0a4469 55%,#0d7291);page-break-after:always;display:flex;flex-direction:column;justify-content:space-between}.batch-card-head{display:flex;align-items:center;gap:16px;border-bottom:1px solid rgba(255,255,255,.25);padding-bottom:18px}.batch-card-head img{width:74px;height:74px;border-radius:18px;object-fit:cover}.batch-card-head b{font-size:26px;line-height:1.05}.batch-card-head span{display:block;font-size:11px;letter-spacing:2px;opacity:.7;margin-top:8px}.batch-card-head strong{margin-left:auto;font-size:22px}.batch-card-body{display:grid;grid-template-columns:1fr 220px;gap:30px;align-items:center}.batch-card-body h1{font-size:42px;margin:0 0 20px}.batch-card-body p{font-size:20px;margin:14px 0;color:rgba(255,255,255,.8)}.batch-card-body p b{display:inline-block;width:120px;color:#b8f13e}.batch-class{display:inline-block;padding:10px 15px;border-radius:99px;background:rgba(255,255,255,.15);font-size:16px}.batch-qr{background:white;border-radius:18px;padding:18px;text-align:center;color:#071a2d}.batch-qr small{display:block;margin-top:8px;font-weight:bold}.batch-card-body footer,footer{font-size:14px;opacity:.75}@page{size:A4;margin:0}@media print{html,body{background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.batch-id-card{height:297mm;min-height:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}}@media(max-width:700px){.batch-id-card{padding:18mm 12mm}.batch-card-body{grid-template-columns:1fr}.batch-card-body h1{font-size:30px}.batch-card-body p{font-size:16px}.batch-qr{width:190px}}</style></head><body>${cards}<script>window.onload=()=>{${ids.map(id=>`new QRCode(document.getElementById('qr-${id}'),{text:${JSON.stringify(id)},width:170,height:170,colorDark:'#071a2d',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});`).join('')}}<\/script></body></html>`}
+function printStudentCards(ids){const list=(ids||db.students.map(s=>s.id)).filter(Boolean);if(!list.length)return toast('Belum ada data siswa.','error');const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser.','error');w.document.write(studentCardBatchHTML(list).replace('</body>','<script>setTimeout(()=>window.print(),700)<\/script></body>'));w.document.close()}
 function downloadStudentCard(id){if(!student(id))return;download(`id-card-${id}.html`,studentCardBatchHTML([id]),'text/html;charset=utf-8');toast('File ID card perorangan berhasil diunduh.')}
 function downloadAllStudentCards(){const ids=db.students.filter(s=>s.status==='Aktif').map(s=>s.id);if(!ids.length)return toast('Belum ada siswa aktif.','error');download(`id-card-semua-siswa-${nowISO()}.html`,studentCardBatchHTML(ids),'text/html;charset=utf-8');toast('File ID card seluruh siswa berhasil diunduh.')}
 function printStudents(){openPrint('Data Siswa',tableHTML(['ID','Nama','Tempat Lahir','Tanggal Lahir','Asal Sekolah','Kelas','Orang Tua','HP','Paket','Sisa','Status'],db.students.map(s=>[s.id,s.name,s.birthPlace||'-',s.birth?fmtDate(s.birth):'-',s.school||'-',s.class,s.parent,s.phone,s.package+'x',s.remaining+'/'+s.package,s.status])))}
@@ -3991,18 +3986,10 @@ function tenantStateKey(club){
 }
 function tenantLabel(club){return club?`Tenant #${String(Number(club.tenant_no)||0).padStart(3,'0')} • ${club.name}`:'Tenant belum dipilih'}
 
-const SWIMORA_SUPER_ADMIN_EMAILS=['azzahidahsetyamandiri@gmail.com'];
 async function getCurrentPlatformAdmin(client,user){
-  if(!user)return false;
-  const email=String(user.email||'').trim().toLowerCase();
-  try{
-    const {data,error}=await client.from('platform_admins').select('role,is_active').eq('user_id',user.id).eq('is_active',true).maybeSingle();
-    if(!error && data?.role==='super_admin' && data?.is_active!==false)return true;
-    if(error)console.warn('platform_admins check:',error);
-  }catch(e){console.warn('platform_admins check exception:',e)}
-  // Backward-compatible fallback for the existing SWIMORA platform owner.
-  // Authentication is still required by Supabase; this only restores the role mapping.
-  return SWIMORA_SUPER_ADMIN_EMAILS.includes(email);
+  const {data,error}=await client.from('platform_admins').select('role,is_active').eq('user_id',user.id).eq('is_active',true).maybeSingle();
+  if(error && !/0 rows|multiple/i.test(String(error.message||''))) console.warn('platform_admins check',error);
+  return data?.role==='super_admin' && data?.is_active!==false;
 }
 
 async function getUserClubMemberships(client,user){
@@ -4188,7 +4175,7 @@ async function refreshSuperAdminDashboard(){
     if(!clubs?.length){grid.innerHTML='<div class="sa-empty">Belum ada tenant.</div>';return;}
     grid.innerHTML=clubs.map(c=>{
       const b=billMap.get(c.id);const fee=b?.registration_fee_enabled?money(Number(b.registration_fee||0)):'Tidak aktif';
-      const logo=c.logo_url||((Number(c.tenant_no)===1)?DEFAULT_LOGO:SWIMORA_GENERIC_LOGO);const subStatus=String(c.subscription_status||'').toLowerCase();const inactive=(String(c.status||'').toLowerCase()!=='active')||['inactive','expired','cancelled','canceled','unpaid'].includes(subStatus);return `<div class="tenant-card"><div class="tenant-top"><span class="tenant-no">TENANT #${String(c.tenant_no).padStart(3,'0')}</span><span class="status ${c.status==='active'?'green':'gray'}">${esc(c.status||'-')}</span></div><div class="tenant-brand-row"><img class="tenant-logo" src="${esc(logo)}" alt="Logo ${esc(c.name)}"><div class="tenant-brand-copy"><h3>${esc(c.name)}</h3><div class="tenant-code">${esc(c.code)} • /${esc(c.slug||'')}</div></div></div><div class="tenant-stats"><div class="tenant-stat"><b>${sc.get(c.id)||0}</b><span>Siswa</span></div><div class="tenant-stat"><b>${mc.get(c.id)||0}</b><span>User</span></div><div class="tenant-stat"><b>${ownerCount.get(c.id)||0}</b><span>Owner</span></div><div class="tenant-stat"><b>${fee}</b><span>Daftar</span></div></div><div class="tenant-actions"><button class="btn btn-cyan btn-sm" onclick="enterTenantFromSuperAdmin('${c.id}')">Masuk ke Klub</button><button class="btn btn-outline btn-sm" onclick="openAssignMemberModal(${Number(c.tenant_no)})">Kelola User</button><button class="btn btn-outline btn-sm" onclick="openTenantAccessModal(${Number(c.tenant_no)})">Akses Login</button>${Number(c.tenant_no)!==1&&inactive?`<button class="btn btn-outline btn-sm delete-tenant-btn" style="border-color:#d66;color:#a22" onclick="deleteTenant('${c.id}',${JSON.stringify(c.name||'Tenant')})">Hapus Tenant</button>`:''}</div></div>`;
+      const logo=c.logo_url||((Number(c.tenant_no)===1)?DEFAULT_LOGO:SWIMORA_GENERIC_LOGO);return `<div class="tenant-card"><div class="tenant-top"><span class="tenant-no">TENANT #${String(c.tenant_no).padStart(3,'0')}</span><span class="status ${c.status==='active'?'green':'gray'}">${esc(c.status||'-')}</span></div><div class="tenant-brand-row"><img class="tenant-logo" src="${esc(logo)}" alt="Logo ${esc(c.name)}"><div class="tenant-brand-copy"><h3>${esc(c.name)}</h3><div class="tenant-code">${esc(c.code)} • /${esc(c.slug||'')}</div></div></div><div class="tenant-stats"><div class="tenant-stat"><b>${sc.get(c.id)||0}</b><span>Siswa</span></div><div class="tenant-stat"><b>${mc.get(c.id)||0}</b><span>User</span></div><div class="tenant-stat"><b>${ownerCount.get(c.id)||0}</b><span>Owner</span></div><div class="tenant-stat"><b>${fee}</b><span>Daftar</span></div></div><div class="tenant-actions"><button class="btn btn-cyan btn-sm" onclick="enterTenantFromSuperAdmin('${c.id}')">Masuk ke Klub</button><button class="btn btn-outline btn-sm" onclick="openAssignMemberModal(${Number(c.tenant_no)})">Kelola User</button></div></div>`;
     }).join('');
   }catch(err){console.error(err);if(grid)grid.innerHTML=`<div class="sa-empty danger">Gagal memuat dashboard: ${esc(err?.message||err)}</div>`;}
 }
@@ -4309,20 +4296,10 @@ async function login(e){
   if(!client){return toast('Koneksi Supabase aplikasi belum siap.','error');}
   const submitBtn=e.submitter||document.querySelector('#loginForm button[type="submit"]'),oldText=submitBtn?.textContent;if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Memeriksa akun & role...';}
   try{
-    const {data,error}=await client.auth.signInWithPassword({email,password});
-    if(error)throw error;
-    if(!data?.user)throw new Error('Sesi login tidak terbentuk.');
-    platformUserEmail=data.user.email||email;
-    platformAdminSession=await getCurrentPlatformAdmin(client,data.user);
-    if(platformAdminSession){
-      showSuperAdminView(platformUserEmail);
-      const st=document.getElementById('loginSupabaseStatus');
-      if(st)st.innerHTML='<b style="color:#138458">Super Admin berhasil login.</b>';
-      toast('Selamat datang di Dashboard Super Admin SWIMORA.');
-      return;
-    }
-    const memberships=await getUserClubMemberships(client,data.user);
-    if(!memberships.length)throw new Error('Password benar, tetapi akun belum dikenali sebagai Super Admin dan belum terhubung ke tenant aktif. Jika ini akun Super Admin lama, gunakan file SWIMORA V17.5 SUPERADMIN LOGIN FIX atau periksa tabel platform_admins.');
+    const {data,error}=await client.auth.signInWithPassword({email,password});if(error)throw error;if(!data?.user)throw new Error('Sesi login tidak terbentuk.');
+    platformUserEmail=data.user.email||email;platformAdminSession=await getCurrentPlatformAdmin(client,data.user);
+    if(platformAdminSession){showSuperAdminView(platformUserEmail);const st=document.getElementById('loginSupabaseStatus');if(st)st.innerHTML='<b style="color:#138458">Super Admin berhasil login.</b>';toast('Selamat datang di Dashboard Super Admin SWIMORA.');return;}
+    const memberships=await getUserClubMemberships(client,data.user);if(!memberships.length)throw new Error('Akun berhasil login, tetapi belum terhubung ke tenant aktif. Hubungi Super Admin SWIMORA.');
     const chosen=memberships[0].club;await loadTenantConfiguration(client,chosen);currentRole='admin';cloudStateLoaded=false;
     await loadStudentsFromSupabase(false);await loadClubStateFromSupabase(false);enterApp('dashboard');updateTenantUI();
     const st=document.getElementById('loginSupabaseStatus');if(st)st.innerHTML=`<b style="color:#138458">Login berhasil.</b> ${esc(tenantLabel(chosen))}`;toast(`Masuk ke ${tenantLabel(chosen)}.`);
@@ -4384,8 +4361,7 @@ function exitSuperAdminPreview(){
 /* SWIMORA extensions: A4 ID-card batch export + PB-based swim programming. */
 function selectedStudentCardIds(){return [...document.querySelectorAll('.student-card-check:checked')].map(x=>x.value)}
 function studentCardMarkup(s){return `<article class="a4-id-card"><div class="a4-card-top"><div><b>SWIMORA</b><span>TRUDGEN SWIMMING CLUB</span></div><strong>ID CARD SISWA</strong></div><div class="a4-card-body"><div class="a4-card-avatar">${esc((s.name||'?').trim().slice(0,1).toUpperCase())}</div><div class="a4-card-info"><h2>${esc(s.name||'-')}</h2><p><b>ID:</b> ${esc(s.id||'-')}</p><p><b>Kelas:</b> ${esc(s.class||'-')} &nbsp; <b>Status:</b> ${esc(s.status||'-')}</p><p><b>Lahir:</b> ${esc(s.birthPlace||'-')}, ${s.birth?fmtDate(s.birth):'-'}</p><p><b>Orang Tua:</b> ${esc(s.parent||'-')}</p><p><b>HP:</b> ${esc(s.phone||'-')}</p></div></div><div class="a4-card-foot"><span>Data terdaftar di SWIMORA</span><b>${esc(s.id||'-')}</b></div></article>`}
-function openA4StudentCards(list,title='ID Card Siswa SWIMORA'){if(!list.length)return toast('Tidak ada siswa yang dipilih.','error');const w=window.open('','_blank');if(!w)return toast('Izinkan pop-up browser untuk membuat PDF A4.','error');const cards=list.map(studentCardMarkup).join('');w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4 portrait;margin:8mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#102b3c}.a4-sheet{display:grid;grid-template-columns:1fr 1fr;gap:7mm 6mm}.a4-id-card{height:55mm;border:1px solid #b9d3df;border-radius:4mm;overflow:hidden;page-break-inside:avoid;background:#fff;display:flex;flex-direction:column}.a4-card-top{background:linear-gradient(135deg,#061827,#0a6d9c);color:#fff;padding:5mm 6mm;display:flex;justify-content:space-between;align-items:center}.a4-card-top b{display:block;font-size:15px;letter-spacing:1.4px}.a4-card-top span{display:block;font-size:7px;opacity:.72;letter-spacing:1px;margin-top:1mm}.a4-card-top strong{font-size:8px;letter-spacing:.8px}.a4-card-body{display:flex;gap:5mm;padding:5mm 6mm;flex:1}.a4-card-avatar{width:19mm;height:19mm;border-radius:50%;display:grid;place-items:center;background:#dff6f5;color:#087c82;font-size:24px;font-weight:900;flex:0 0 auto}.a4-card-info h2{margin:0 0 2mm;font-size:14px}.a4-card-info p{margin:1.2mm 0;font-size:8.5px}.a4-card-foot{border-top:1px dashed #c7dbe3;padding:2.5mm 6mm;display:flex;justify-content:space-between;font-size:7px;color:#67808e}@media print{.a4-sheet{break-after:page}.a4-sheet:last-child{break-after:auto}}</style></head><body><div class="a4-sheet">${cards}</div><script>window.onload=()=>setTimeout(()=>window.print(),450)<\/script>
-</body></html>`);w.document.close();toast('Dialog cetak PDF A4 dibuka. Pilih “Save as PDF” untuk mengunduh.')}
+function openA4StudentCards(list,title='ID Card Siswa SWIMORA'){if(!list.length)return toast('Tidak ada siswa yang dipilih.','error');const w=window.open('','_blank');if(!w)return toast('Izinkan pop-up browser untuk membuat PDF A4.','error');const cards=list.map(studentCardMarkup).join('');w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:A4 portrait;margin:8mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#102b3c}.a4-sheet{display:grid;grid-template-columns:1fr 1fr;gap:7mm 6mm}.a4-id-card{height:55mm;border:1px solid #b9d3df;border-radius:4mm;overflow:hidden;page-break-inside:avoid;background:#fff;display:flex;flex-direction:column}.a4-card-top{background:linear-gradient(135deg,#061827,#0a6d9c);color:#fff;padding:5mm 6mm;display:flex;justify-content:space-between;align-items:center}.a4-card-top b{display:block;font-size:15px;letter-spacing:1.4px}.a4-card-top span{display:block;font-size:7px;opacity:.72;letter-spacing:1px;margin-top:1mm}.a4-card-top strong{font-size:8px;letter-spacing:.8px}.a4-card-body{display:flex;gap:5mm;padding:5mm 6mm;flex:1}.a4-card-avatar{width:19mm;height:19mm;border-radius:50%;display:grid;place-items:center;background:#dff6f5;color:#087c82;font-size:24px;font-weight:900;flex:0 0 auto}.a4-card-info h2{margin:0 0 2mm;font-size:14px}.a4-card-info p{margin:1.2mm 0;font-size:8.5px}.a4-card-foot{border-top:1px dashed #c7dbe3;padding:2.5mm 6mm;display:flex;justify-content:space-between;font-size:7px;color:#67808e}@media print{.a4-sheet{break-after:page}.a4-sheet:last-child{break-after:auto}}</style></head><body><div class="a4-sheet">${cards}</div><script>window.onload=()=>setTimeout(()=>window.print(),450)<\/script></body></html>`);w.document.close();toast('Dialog cetak PDF A4 dibuka. Pilih “Save as PDF” untuk mengunduh.')}
 function downloadStudentCard(id){const s=student(id);if(s)openA4StudentCards([s],`ID Card ${s.name}`)}
 function downloadAllStudentCards(){const list=db.students.filter(s=>s.status==='Aktif');openA4StudentCards(list,'Semua ID Card Siswa SWIMORA')}
 function downloadSelectedStudentCards(){const ids=selectedStudentCardIds(),list=db.students.filter(s=>ids.includes(s.id));openA4StudentCards(list,'ID Card Siswa Terpilih')}
@@ -4397,8 +4373,7 @@ function pbProgramForStudent(s,race){const pb=bestPBForStudent(s,race),pool=pool
 function updatePBProgramPreview(){const sid=val('mPBstudent'),s=student(sid),race=val('mPBrace'),p=s?pbProgramForStudent(s,race):null,el=document.getElementById('pbProgramPreview');if(!el)return;el.innerHTML=p?`<div class="program-plan-card"><h4>${esc(p.student.name)} • ${esc(p.race)}</h4><p>PB saat ini <b>${esc(p.pb)}</b> • Volume ${p.volume} m • Target interval memakai persentase PB.</p><ol>${p.sets.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`:'<div class="hint">Belum ada catatan waktu untuk siswa dan nomor ini. Catat PB terlebih dahulu di menu Progres Event.</div>'}
 function openPBProgramModal(){const eligible=db.students.filter(s=>timingRacesForStudent(s).length);if(!eligible.length)return toast('Belum ada siswa dengan catatan PB. Tambahkan catatan waktu di menu Progres Event terlebih dahulu.','error');const first=eligible[0],races=timingRacesForStudent(first);openModal('Program Latihan Berdasarkan PB',`<div class="hint">Program ini memakai PB tercepat siswa sebagai acuan interval mudah, threshold, dan race pace. Hasilnya adalah panduan pelatih, bukan diagnosis medis.</div><div class="form-grid"><div class="field"><label>Siswa</label><select id="mPBstudent" onchange="refreshPBRaceOptions()">${eligible.map(s=>`<option value="${s.id}">${esc(s.name)} • ${esc(s.class)}</option>`).join('')}</select></div><div class="field"><label>Nomor / Gaya</label><select id="mPBrace">${races.map(r=>`<option>${esc(r)}</option>`).join('')}</select></div><div class="field full" id="pbProgramPreview"></div></div><div class="small muted">Rumus interval: mudah ±120% PB, threshold ±108% PB, race pace 100% PB. Pelatih dapat menyesuaikan beban, teknik, dan istirahat.</div>`,'Cetak Program','printPBProgram()');setTimeout(()=>{document.getElementById('mPBrace')?.addEventListener('change',updatePBProgramPreview);updatePBProgramPreview()},40)}
 function refreshPBRaceOptions(){const s=student(val('mPBstudent')),el=document.getElementById('mPBrace');if(!s||!el)return;el.innerHTML=timingRacesForStudent(s).map(r=>`<option>${esc(r)}</option>`).join('');updatePBProgramPreview()}
-function printPBProgram(){const s=student(val('mPBstudent')),p=s&&pbProgramForStudent(s,val('mPBrace'));if(!p)return toast('PB belum tersedia untuk pilihan tersebut.','error');const w=window.open('','_blank');if(!w)return toast('Izinkan pop-up browser untuk mencetak program.','error');w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Program PB ${esc(s.name)}</title><style>@page{size:A4;margin:14mm}body{font-family:Arial;color:#163246}h1{color:#087c82}li{margin:8px 0}.meta{color:#5a7180;font-size:12px}</style></head><body><h1>Program Latihan Berbasis PB</h1><p class="meta">${esc(s.name)} • ${esc(s.class)} • ${esc(p.race)} • PB ${esc(p.pb)} • Volume ${p.volume} m</p><ol>${p.sets.map(x=>`<li>${esc(x)}</li>`).join('')}</ol><p class="meta">Catatan: pelatih menyesuaikan intensitas dengan usia, teknik, kondisi, dan tujuan latihan.</p><script>window.onload=()=>setTimeout(()=>window.print(),350)<\/script>
-</body></html>`);w.document.close();closeModal()}
+function printPBProgram(){const s=student(val('mPBstudent')),p=s&&pbProgramForStudent(s,val('mPBrace'));if(!p)return toast('PB belum tersedia untuk pilihan tersebut.','error');const w=window.open('','_blank');if(!w)return toast('Izinkan pop-up browser untuk mencetak program.','error');w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Program PB ${esc(s.name)}</title><style>@page{size:A4;margin:14mm}body{font-family:Arial;color:#163246}h1{color:#087c82}li{margin:8px 0}.meta{color:#5a7180;font-size:12px}</style></head><body><h1>Program Latihan Berbasis PB</h1><p class="meta">${esc(s.name)} • ${esc(s.class)} • ${esc(p.race)} • PB ${esc(p.pb)} • Volume ${p.volume} m</p><ol>${p.sets.map(x=>`<li>${esc(x)}</li>`).join('')}</ol><p class="meta">Catatan: pelatih menyesuaikan intensitas dengan usia, teknik, kondisi, dan tujuan latihan.</p><script>window.onload=()=>setTimeout(()=>window.print(),350)<\/script></body></html>`);w.document.close();closeModal()}
 </script>
 
 <script>
@@ -4411,8 +4386,7 @@ function pbPeriodizationForStudent(s,race,competitionDate,weeks){const base=pbPr
 function updatePBPeriodPreview(){const s=student(val('mPBPstudent')),p=s&&pbPeriodizationForStudent(s,val('mPBRace'),val('mPBCompetition'),val('mPBWeeks')),el=document.getElementById('pbPeriodPreview');if(!el)return;el.innerHTML=p?`<div class="program-plan-card"><h4>${esc(p.student.name)} • ${esc(p.race)}</h4><p>PB ${esc(p.pb)} • ${p.weeks} minggu • Puncak kompetisi ${fmtDate(p.competitionDate)}</p>${p.plan.slice(0,3).map(x=>`<div class="program-preview-item"><b>Minggu ${x.week} — ${esc(x.phase)}</b><span>${esc(x.focus)} • ${x.volume} m</span></div>`).join('')}${p.plan.length>3?'<div class="small muted" style="margin-top:7px">Minggu berikutnya tersedia pada lembar cetak.</div>':''}</div>`:'<div class="hint">Pilih siswa, nomor lomba, tanggal kompetisi, dan durasi program.</div>'}
 function openPBProgramModal(){const eligible=db.students.filter(s=>timingRacesForStudent(s).length);if(!eligible.length)return toast('Belum ada siswa dengan catatan PB. Tambahkan catatan waktu di menu Progres Event terlebih dahulu.','error');const first=eligible[0],races=timingRacesForStudent(first),defaultCompetition=new Date(Date.now()+56*86400000).toISOString().slice(0,10);openModal('Program Periodisasi Berbasis PB',`<div class="hint">Program ini tidak terbatas satu pertemuan. Sistem menyusun fase fondasi, build, race-specific, dan taper menuju tanggal kompetisi berdasarkan PB siswa.</div><div class="form-grid"><div class="field"><label>Siswa</label><select id="mPBPstudent" onchange="refreshPBPeriodStudent()">${eligible.map(s=>`<option value="${s.id}">${esc(s.name)} • ${esc(s.class)}</option>`).join('')}</select></div><div class="field"><label>Nomor / Gaya</label><select id="mPBRace">${races.map(r=>`<option>${esc(r)}</option>`).join('')}</select></div><div class="field"><label>Tanggal Kompetisi / Puncak</label><input id="mPBCompetition" type="date" value="${defaultCompetition}"></div><div class="field"><label>Durasi Program (minggu)</label><input id="mPBWeeks" type="number" min="2" max="24" value="8"></div><div class="field full" id="pbPeriodPreview"></div></div><div class="small muted">Pelatih tetap menyesuaikan volume dan intensitas dengan usia, kesehatan, kalender lomba, dan respons latihan siswa.</div>`,'Cetak Program','printPBPeriodization()');setTimeout(()=>{['mPBRace','mPBCompetition','mPBWeeks'].forEach(id=>document.getElementById(id)?.addEventListener('change',updatePBPeriodPreview));updatePBPeriodPreview()},50)}
 function refreshPBPeriodStudent(){const s=student(val('mPBPstudent')),el=document.getElementById('mPBRace');if(!s||!el)return;el.innerHTML=timingRacesForStudent(s).map(r=>`<option>${esc(r)}</option>`).join('');updatePBPeriodPreview()}
-function printPBPeriodization(){const s=student(val('mPBPstudent')),p=s&&pbPeriodizationForStudent(s,val('mPBRace'),val('mPBCompetition'),val('mPBWeeks'));if(!p)return toast('Lengkapi data program dan pastikan PB tersedia.','error');const w=window.open('','_blank');if(!w)return toast('Izinkan pop-up browser untuk mencetak program.','error');w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Periodisasi PB ${esc(s.name)}</title><style>@page{size:A4;margin:14mm}body{font-family:Arial;color:#163246}h1{color:#087c82;margin-bottom:3px}.meta{color:#5a7180;font-size:12px;margin-bottom:15px}.week{border:1px solid #cfe0e5;border-radius:10px;padding:10px 14px;margin:0 0 10px;break-inside:avoid}.week h2{font-size:15px;margin:0 0 3px;color:#0a6d9c}.week p{font-size:11px;color:#5a7180;margin:0 0 5px}.week ol{margin:5px 0;padding-left:20px}.week li{font-size:11px;margin:4px 0}</style></head><body><h1>Program Latihan Menuju Puncak Kompetisi</h1><div class="meta">${esc(s.name)} • ${esc(s.class)} • ${esc(p.race)} • PB ${esc(p.pb)} • Kompetisi ${fmtDate(p.competitionDate)} • ${p.weeks} minggu</div>${p.plan.map(x=>`<section class="week"><h2>Minggu ${x.week} — ${esc(x.phase)}</h2><p>${esc(x.focus)} • Volume ±${x.volume} m</p><ol>${x.sets.map(y=>`<li>${esc(y)}</li>`).join('')}</ol></section>`).join('')}<p class="meta">Catatan pelatih: sesuaikan beban dengan kondisi harian dan hentikan latihan bila siswa mengalami nyeri atau keluhan kesehatan.</p><script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script>
-</body></html>`);w.document.close();closeModal()}
+function printPBPeriodization(){const s=student(val('mPBPstudent')),p=s&&pbPeriodizationForStudent(s,val('mPBRace'),val('mPBCompetition'),val('mPBWeeks'));if(!p)return toast('Lengkapi data program dan pastikan PB tersedia.','error');const w=window.open('','_blank');if(!w)return toast('Izinkan pop-up browser untuk mencetak program.','error');w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Periodisasi PB ${esc(s.name)}</title><style>@page{size:A4;margin:14mm}body{font-family:Arial;color:#163246}h1{color:#087c82;margin-bottom:3px}.meta{color:#5a7180;font-size:12px;margin-bottom:15px}.week{border:1px solid #cfe0e5;border-radius:10px;padding:10px 14px;margin:0 0 10px;break-inside:avoid}.week h2{font-size:15px;margin:0 0 3px;color:#0a6d9c}.week p{font-size:11px;color:#5a7180;margin:0 0 5px}.week ol{margin:5px 0;padding-left:20px}.week li{font-size:11px;margin:4px 0}</style></head><body><h1>Program Latihan Menuju Puncak Kompetisi</h1><div class="meta">${esc(s.name)} • ${esc(s.class)} • ${esc(p.race)} • PB ${esc(p.pb)} • Kompetisi ${fmtDate(p.competitionDate)} • ${p.weeks} minggu</div>${p.plan.map(x=>`<section class="week"><h2>Minggu ${x.week} — ${esc(x.phase)}</h2><p>${esc(x.focus)} • Volume ±${x.volume} m</p><ol>${x.sets.map(y=>`<li>${esc(y)}</li>`).join('')}</ol></section>`).join('')}<p class="meta">Catatan pelatih: sesuaikan beban dengan kondisi harian dan hentikan latihan bila siswa mengalami nyeri atau keluhan kesehatan.</p><script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script></body></html>`);w.document.close();closeModal()}
 function parentPhoneVariants(raw){const d=normalizePhone(raw);if(!d)return[];const noZero=d.replace(/^0+/,'');return [...new Set([d,'0'+noZero,'62'+noZero,'+62'+noZero])].filter(Boolean)}
 function parentPinMatches(row,rawPin,phone){const entered=String(rawPin||'').trim();if(!entered)return false;const stored=String(row.parent_pin||row.parentPin||'').trim();if(stored)return entered===stored;const d=normalizePhone(phone);return entered===d.slice(-4)}
 // Parent-login wrapper removed in V16.8 Stable: consolidated into login().
@@ -4760,8 +4734,7 @@ const oldOpenReportModal=window.openReportModal;window.openReportModal=function(
   window.toggleScannerTorch=async function(){const v=document.getElementById('cameraFeed'),track=v?.srcObject?.getVideoTracks?.()[0];if(!track)return toast('Kamera belum aktif.','error');const caps=track.getCapabilities?.();if(!caps?.torch)return toast('Flash tidak didukung perangkat ini.','error');window.__torchOn=!window.__torchOn;try{await track.applyConstraints({advanced:[{torch:window.__torchOn}]});toast(window.__torchOn?'Flash menyala.':'Flash mati.')}catch(e){toast('Flash tidak dapat diaktifkan.','error')}};
   window.decodeScannerGallery=function(input){const file=input?.files?.[0];if(!file)return;const status=document.getElementById('scannerStatus'),result=document.getElementById('scannerResult');if(status)status.textContent='Membaca gambar dari galeri...';const img=new Image();img.onload=async()=>{try{const z=await loadZXing(),reader=new z.BrowserMultiFormatReader(),decoded=await reader.decodeFromImageElement(img);const s=studentFromScanValue(decoded.getText());if(!s){if(status)status.textContent='Kode terbaca, tetapi atlet tidak ditemukan.';return}pendingBarcodeStudentId=s.id;stopScanner();if(result)result.innerHTML=`<strong>${esc(s.name)}</strong><span>${esc(s.id)} • Barcode cocok</span>`;if(status)status.textContent='Atlet ditemukan. Periksa nama lalu tekan Simpan Kehadiran.';document.getElementById('savePendingAttendanceBtn')?.removeAttribute('hidden');document.getElementById('cancelPendingAttendanceBtn')?.removeAttribute('hidden')}catch(e){if(status)status.textContent='Barcode pada gambar tidak terbaca. Gunakan foto yang lebih jelas.'}};img.src=URL.createObjectURL(file)};
   const cardStyles=`@page{size:A4 portrait;margin:8mm}@media print{*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.print-sheet{break-after:page}.print-sheet:last-child{break-after:auto}}*{box-sizing:border-box}body{margin:0;background:#e9f2f5;font-family:Arial,sans-serif}.print-sheet{display:grid;grid-template-columns:1fr 1fr;gap:7mm 6mm}.print-card{height:54mm;position:relative;overflow:hidden;border-radius:5mm;background:linear-gradient(135deg,#061827 0%,#0a4469 52%,#0d8e9d 100%);color:#fff;padding:5mm 6mm;box-shadow:0 2mm 5mm rgba(4,22,36,.2);break-inside:avoid}.print-card:after{content:'';position:absolute;width:45mm;height:45mm;border:1px solid rgba(255,255,255,.13);border-radius:50%;right:-19mm;bottom:-22mm}.print-head{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1}.print-brand b{display:block;font-size:13px;letter-spacing:1.4px}.print-brand span{display:block;font-size:6px;letter-spacing:1px;opacity:.68;margin-top:1mm}.print-title{font-size:7px;letter-spacing:.8px;font-weight:800;opacity:.88}.print-body{display:grid;grid-template-columns:1fr 24mm;gap:4mm;align-items:end;margin-top:4mm;position:relative;z-index:1}.print-name{font-size:14px;font-weight:900;margin-bottom:2mm;line-height:1.05}.print-pill{display:inline-block;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);border-radius:99px;padding:1mm 2.4mm;font-size:6px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}.print-info{display:grid;gap:1mm;margin-top:2mm}.print-info div{font-size:6.5px;line-height:1.2}.print-info span{opacity:.58;text-transform:uppercase;font-size:5px;margin-right:1mm}.print-qr{background:#fff;border-radius:3mm;padding:1.5mm;width:23mm;height:23mm;display:grid;place-items:center}.print-qr canvas,.print-qr img{width:20mm!important;height:20mm!important}.print-code{font-size:5px;text-align:center;color:#061827;font-weight:900;margin-top:1mm;word-break:break-all}.print-foot{position:absolute;bottom:3mm;left:6mm;right:6mm;display:flex;justify-content:space-between;font-size:5px;letter-spacing:.3px;opacity:.68;z-index:1}`;
-  window.openA4StudentCards=function(list,title='ID Card Siswa SWIMORA'){const rows=(list||[]).filter(Boolean);if(!rows.length)return toast('Tidak ada siswa yang dipilih.','error');const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser.','error');const cards=rows.map((s,i)=>{const code=cardCode(s),id='qrPrint'+i;return `<article class="print-card"><div class="print-head"><div class="print-brand"><b>SWIMORA</b><span>TRUDGEN SWIMMING CLUB</span></div><div class="print-title">ID CARD SISWA</div></div><div class="print-body"><div><div class="print-name">${escCard(s.name||'-')}</div><span class="print-pill">${escCard(s.class||'Siswa')}</span><div class="print-info"><div><span>ID</span><b>${escCard(s.id||'-')}</b></div><div><span>STATUS</span><b>${escCard(s.status||'Aktif')}</b></div><div><span>ORANG TUA</span><b>${escCard(s.parent||'-')}</b></div></div></div><div><div class="print-qr" id="${id}"></div><div class="print-code">${escCard(code)}</div></div></div><div class="print-foot"><span>SWIMORA • MEMBER CARD</span><span>SCAN UNTUK ABSENSI</span></div></article>`}).join('');w.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${escCard(title)}</title><style>${cardStyles}</style></head><body><div class="print-sheet">${cards}</div><script>window.onload=function(){${rows.map((s,i)=>`try{if(window.QRCode)QRCode.toCanvas(document.getElementById('qrPrint${i}'),${JSON.stringify('SWIMORA|'+cardCode(s))},{width:90,margin:0},function(){})}catch(e){}`).join('')}setTimeout(function(){window.print()},700)}<\/script>
-</body></html>`);w.document.close();toast('ID card dibuka dengan warna dan QR yang sama seperti kartu aplikasi. Pilih Save as PDF untuk menyimpan.')};
+  window.openA4StudentCards=function(list,title='ID Card Siswa SWIMORA'){const rows=(list||[]).filter(Boolean);if(!rows.length)return toast('Tidak ada siswa yang dipilih.','error');const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser.','error');const cards=rows.map((s,i)=>{const code=cardCode(s),id='qrPrint'+i;return `<article class="print-card"><div class="print-head"><div class="print-brand"><b>SWIMORA</b><span>TRUDGEN SWIMMING CLUB</span></div><div class="print-title">ID CARD SISWA</div></div><div class="print-body"><div><div class="print-name">${escCard(s.name||'-')}</div><span class="print-pill">${escCard(s.class||'Siswa')}</span><div class="print-info"><div><span>ID</span><b>${escCard(s.id||'-')}</b></div><div><span>STATUS</span><b>${escCard(s.status||'Aktif')}</b></div><div><span>ORANG TUA</span><b>${escCard(s.parent||'-')}</b></div></div></div><div><div class="print-qr" id="${id}"></div><div class="print-code">${escCard(code)}</div></div></div><div class="print-foot"><span>SWIMORA • MEMBER CARD</span><span>SCAN UNTUK ABSENSI</span></div></article>`}).join('');w.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${escCard(title)}</title><style>${cardStyles}</style></head><body><div class="print-sheet">${cards}</div><script>window.onload=function(){${rows.map((s,i)=>`try{if(window.QRCode)QRCode.toCanvas(document.getElementById('qrPrint${i}'),${JSON.stringify('SWIMORA|'+cardCode(s))},{width:90,margin:0},function(){})}catch(e){}`).join('')}setTimeout(function(){window.print()},700)}<\/script></body></html>`);w.document.close();toast('ID card dibuka dengan warna dan QR yang sama seperti kartu aplikasi. Pilih Save as PDF untuk menyimpan.')};
   if(typeof window.downloadAllStudentCards==='function'){const oldAll=window.downloadAllStudentCards;window.downloadAllStudentCards=function(){const ids=[...document.querySelectorAll('input[data-card-select]:checked')].map(x=>x.value);const rows=ids.length?ids.map(student):db.students.filter(s=>s.status!=='Nonaktif');return openA4StudentCards(rows,'ID Card Siswa SWIMORA')}}
   const style=document.createElement('style');style.textContent=`.qris-scanner-shell{margin:-18px;background:#050b13;color:#fff;min-height:min(92vh,820px);display:flex;flex-direction:column}.qris-scanner-head{display:flex;align-items:center;gap:13px;padding:14px 16px;background:#07101d;color:#fff}.qris-scanner-head>div{flex:1}.qris-scanner-head b{display:block;font-size:18px}.qris-scanner-head span{display:block;color:#a9bacb;font-size:11px;margin-top:3px}.qris-back,.qris-close{border:0;background:transparent;color:#fff;font-size:34px;line-height:1;width:36px;height:36px}.qris-close{font-size:28px}.qris-scanner-stage{position:relative;flex:1;min-height:min(72vh,650px);background:#10151d;overflow:hidden}.qris-scanner-stage video{width:100%;height:100%;min-height:min(72vh,650px);object-fit:cover}.qris-dim{position:absolute;inset:0;background:rgba(0,0,0,.52);pointer-events:none}.qris-corner{position:absolute;width:34px;height:34px;border-color:#ff650d;border-style:solid;z-index:2;filter:drop-shadow(0 0 4px rgba(255,101,13,.75))}.qris-tl{left:calc(50% - min(76vw,360px)/2);top:calc(50% - min(45vw,220px)/2);border-width:4px 0 0 4px}.qris-tr{right:calc(50% - min(76vw,360px)/2);top:calc(50% - min(45vw,220px)/2);border-width:4px 4px 0 0}.qris-bl{left:calc(50% - min(76vw,360px)/2);bottom:calc(50% - min(45vw,220px)/2);border-width:0 0 4px 4px}.qris-br{right:calc(50% - min(76vw,360px)/2);bottom:calc(50% - min(45vw,220px)/2);border-width:0 4px 4px 0}.qris-scan-line{position:absolute;left:calc(50% - min(76vw,360px)/2 + 3px);top:50%;width:calc(min(76vw,360px) - 6px);height:2px;background:#ff650d;box-shadow:0 0 15px #ff650d;animation:qrisScan 1.7s ease-in-out infinite;z-index:3}.qris-scan-label{position:absolute;left:0;right:0;bottom:20px;text-align:center;font-weight:800;font-size:14px;text-shadow:0 2px 6px #000;z-index:3}.qris-result{background:#0c1522;padding:12px 16px;min-height:56px;color:#d9e7f4}.qris-result strong,.qris-result span{display:block}.qris-result strong{font-size:16px;color:#baff32}.qris-actions{display:flex;justify-content:center;gap:36px;padding:13px;background:#050b13}.qris-tool{border:0;background:rgba(255,255,255,.08);color:#fff;border-radius:99px;min-width:72px;padding:8px 12px;font-size:22px}.qris-tool span{display:block;font-size:11px;margin-top:3px}.qris-confirm-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;background:#fff}.modal:has(.qris-scanner-shell) .modal-content{width:min(100vw,620px);max-width:620px;padding:0;overflow:hidden;background:#050b13}@keyframes qrisScan{0%,100%{transform:translateY(-100px);opacity:.45}50%{transform:translateY(100px);opacity:1}}`;document.head.appendChild(style)
 })();
@@ -4794,8 +4767,7 @@ const oldOpenReportModal=window.openReportModal;window.openReportModal=function(
     try{qr=await QRCode.toDataURL(code,{width:420,margin:3,color:{dark:'#071a2d',light:'#ffffff'}})}catch(e){return toast('QR tidak dapat dibuat: '+(e?.message||e),'error')}
     const w=window.open('','_blank');
     if(!w)return toast('Popup diblokir browser.','error');
-    w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QR Absensi '+esc(s.name)+'</title><style>@page{size:58mm 80mm;margin:0}*{box-sizing:border-box}body{margin:0;width:58mm;height:80mm;display:grid;place-items:center;font-family:Arial,sans-serif;text-align:center;color:#071a2d}.wrap{padding:6mm}.wrap h2{font-size:15px;margin:3mm 0}.wrap p{font-size:9px;margin:2mm}.qr{width:48mm;height:48mm;display:block}</style></head><body><div class="wrap"><b>SWIMORA</b><h2>'+esc(s.name)+'</h2><img class="qr" src="'+qr+'" alt="QR absensi '+esc(s.name)+'"><p>'+esc(s.id||'')+'</p></div><script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script>
-</body></html>');
+    w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QR Absensi '+esc(s.name)+'</title><style>@page{size:58mm 80mm;margin:0}*{box-sizing:border-box}body{margin:0;width:58mm;height:80mm;display:grid;place-items:center;font-family:Arial,sans-serif;text-align:center;color:#071a2d}.wrap{padding:6mm}.wrap h2{font-size:15px;margin:3mm 0}.wrap p{font-size:9px;margin:2mm}.qr{width:48mm;height:48mm;display:block}</style></head><body><div class="wrap"><b>SWIMORA</b><h2>'+esc(s.name)+'</h2><img class="qr" src="'+qr+'" alt="QR absensi '+esc(s.name)+'"><p>'+esc(s.id||'')+'</p></div><script>window.onload=function(){setTimeout(function(){window.print()},250)}<\/script></body></html>');
     w.document.close();
   };
   const profiles={
@@ -4827,8 +4799,7 @@ const oldOpenReportModal=window.openReportModal;window.openReportModal=function(
   function decorateCards(){document.querySelectorAll('[data-student-id],[data-card-student-id],.student-card,.id-card,.student-id-card').forEach(root=>{const id=root.dataset.studentId||root.dataset.cardStudentId||root.getAttribute('data-id');const s=id?(student(id)||db.students.find(x=>String(x.id)===String(id))):null;if(s&&!root.querySelector('.visible-card-qr'))renderStudentCardBarcode(root,s)})}
   setInterval(decorateCards,800);document.addEventListener('DOMContentLoaded',decorateCards);
   const style=document.createElement('style');style.textContent='.card-qr{display:flex;flex-direction:column;align-items:center;gap:5px;background:#fff;border:2px solid #071a2d;border-radius:12px;padding:8px;min-width:168px;min-height:177px}.card-qr canvas{display:block!important;background:#fff!important;image-rendering:pixelated}.card-qr small{font:800 9px/1.2 ui-monospace,monospace;color:#071a2d;text-align:center}.print-qr{width:104px;height:104px;display:flex;align-items:center;justify-content:center;background:#fff;border:2px solid #071a2d;border-radius:8px;overflow:hidden}.print-qr canvas,.print-qr img{width:96px!important;height:96px!important;display:block!important;background:#fff!important;image-rendering:pixelated}.print-code{font:800 8px ui-monospace,monospace;color:#071a2d;text-align:center;max-width:108px;word-break:break-all}.scanner-focus-box{position:absolute!important;left:50%!important;top:50%!important;width:min(78vw,340px)!important;height:min(28vw,122px)!important;transform:translate(-50%,-50%)!important;border:0!important;background:transparent!important;box-shadow:0 0 0 9999px rgba(0,0,0,.52)!important;z-index:4!important}.scanner-focus-box:before,.scanner-focus-box:after{content:"";position:absolute;inset:0;border:4px solid transparent;border-top-color:#ff650d;border-left-color:#ff650d;border-radius:7px}.scanner-focus-box:after{border-top-color:transparent;border-left-color:transparent;border-right-color:#ff650d;border-bottom-color:#ff650d}.scanner-focus-line{position:absolute!important;z-index:5!important;left:calc(50% - min(78vw,340px)/2)!important;width:min(78vw,340px)!important;top:50%!important;height:2px!important;background:#ff650d!important;box-shadow:0 0 14px #ff650d!important}.attendance-clear-btn{margin-left:6px!important;background:#fff0f2!important;border:1px solid #ffd0d7!important;color:#b33147!important;border-radius:7px!important;padding:5px 8px!important;font-size:11px!important;font-weight:800!important}.pb-dose-legend{padding:11px 13px;border:1px solid #cfe1ea;background:#f6fbfd;border-radius:10px;margin:8px 0;font-size:12px;line-height:1.55;color:#35586b}.pb-dose-legend b{color:#071a2d}';document.head.appendChild(style);
-  window.openA4StudentCards=async function(list,title='ID Card Siswa SWIMORA'){const rows=(list||[]).filter(Boolean);if(!rows.length)return toast('Tidak ada siswa yang dipilih.','error');const qr=[];for(const s of rows){let data='';try{data=await QRCode.toDataURL(payloadFor(s),{width:220,margin:3,color:{dark:'#071a2d',light:'#ffffff'}})}catch(e){const c=document.createElement('canvas');await drawVisibleQR(c,payloadFor(s),220);data=c.toDataURL('image/png')}qr.push(data)}const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser.','error');const cards=rows.map((s,i)=>'<article class="print-card"><div class="print-head"><div class="print-brand"><b>SWIMORA</b><span>TRUDGEN SWIMMING CLUB</span></div><div class="print-title">ID CARD SISWA</div></div><div class="print-body"><div><div class="print-name">'+escText(s.name||'-')+'</div><span class="print-pill">'+escText(s.class||'Siswa')+'</span><div class="print-info"><div><span>ID</span><b>'+escText(s.id||'-')+'</b></div><div><span>STATUS</span><b>'+escText(s.status||'Aktif')+'</b></div><div><span>ORANG TUA</span><b>'+escText(s.parent||'-')+'</b></div></div></div><div class="print-qr"><img src="'+qr[i]+'" alt="QR absensi '+escText(s.name)+'"><div class="print-code">'+escText(codeFor(s))+'</div></div></div><div class="print-foot"><span>SWIMORA • MEMBER CARD</span><span>SCAN UNTUK ABSENSI</span></div></article>').join('');w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+escText(title)+'</title><style>'+cardStyles+' .print-qr{width:110px;height:125px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;border:2px solid #071a2d;border-radius:8px}.print-qr img{width:94px;height:94px;display:block}.print-code{font:800 8px monospace;color:#071a2d;text-align:center;word-break:break-all}</style></head><body><div class="print-sheet">'+cards+'</div><script>window.onload=function(){setTimeout(function(){window.print()},600)}<\\/script>
-</body></html>');w.document.close();toast('ID card siap dicetak dengan barcode/QR terlihat. Pilih Background graphics saat Save as PDF.')};
+  window.openA4StudentCards=async function(list,title='ID Card Siswa SWIMORA'){const rows=(list||[]).filter(Boolean);if(!rows.length)return toast('Tidak ada siswa yang dipilih.','error');const qr=[];for(const s of rows){let data='';try{data=await QRCode.toDataURL(payloadFor(s),{width:220,margin:3,color:{dark:'#071a2d',light:'#ffffff'}})}catch(e){const c=document.createElement('canvas');await drawVisibleQR(c,payloadFor(s),220);data=c.toDataURL('image/png')}qr.push(data)}const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser.','error');const cards=rows.map((s,i)=>'<article class="print-card"><div class="print-head"><div class="print-brand"><b>SWIMORA</b><span>TRUDGEN SWIMMING CLUB</span></div><div class="print-title">ID CARD SISWA</div></div><div class="print-body"><div><div class="print-name">'+escText(s.name||'-')+'</div><span class="print-pill">'+escText(s.class||'Siswa')+'</span><div class="print-info"><div><span>ID</span><b>'+escText(s.id||'-')+'</b></div><div><span>STATUS</span><b>'+escText(s.status||'Aktif')+'</b></div><div><span>ORANG TUA</span><b>'+escText(s.parent||'-')+'</b></div></div></div><div class="print-qr"><img src="'+qr[i]+'" alt="QR absensi '+escText(s.name)+'"><div class="print-code">'+escText(codeFor(s))+'</div></div></div><div class="print-foot"><span>SWIMORA • MEMBER CARD</span><span>SCAN UNTUK ABSENSI</span></div></article>').join('');w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+escText(title)+'</title><style>'+cardStyles+' .print-qr{width:110px;height:125px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;border:2px solid #071a2d;border-radius:8px}.print-qr img{width:94px;height:94px;display:block}.print-code{font:800 8px monospace;color:#071a2d;text-align:center;word-break:break-all}</style></head><body><div class="print-sheet">'+cards+'</div><script>window.onload=function(){setTimeout(function(){window.print()},600)}<\\/script></body></html>');w.document.close();toast('ID card siap dicetak dengan barcode/QR terlihat. Pilih Background graphics saat Save as PDF.')};
   const oldDel=window.deleteAttendanceRecord;window.deleteAttendanceRecord=async function(id){if(typeof oldDel==='function')return oldDel(id);const r=db.attendance.find(x=>String(x.id)===String(id));if(!r)return toast('Catatan tidak ditemukan.','error');if(!confirm('Hapus absensi pada '+r.date+'?'))return;const before=db.attendance.slice();db.attendance=db.attendance.filter(x=>String(x.id)!==String(id));renderAttendance();try{saveDB();await persistClubStateNow();toast('Absensi dihapus dan tidak masuk akumulasi.')}catch(e){db.attendance=before;renderAttendance();toast('Penghapusan gagal.','error')}};
   const oldRender=window.renderAttendance;window.renderAttendance=function(){if(typeof oldRender==='function')oldRender();setTimeout(()=>{const date=selectedAttendanceDate?.();const rows=(db.attendance||[]).filter(a=>a.date===date);const trs=[...document.querySelectorAll('#attendanceTable tr')];rows.forEach((a,i)=>{const cell=trs[i]?.lastElementChild;if(cell&&!cell.querySelector('[data-final-delete]')){const b=document.createElement('button');b.dataset.finalDelete='1';b.className='attendance-clear-btn';b.textContent='Hapus';b.onclick=()=>window.deleteAttendanceRecord(a.id);cell.appendChild(b)}})},30)};
   function addPBLegend(){const el=document.getElementById('pbPeriodPreview');if(el&&!el.querySelector('.pb-dose-legend')){const d=document.createElement('div');d.className='pb-dose-legend';d.innerHTML='<b>Panduan dosis:</b> Target = waktu berenang setiap repetisi. Rest = istirahat setelah repetisi. Send-off = target + rest. Setiap sesi selalu dibagi menjadi warm-up, pre-main set, main set, recovery/skill, dan cool-down. Volume yang tampil adalah volume sesi, bukan volume mingguan.';el.prepend(d)}}setInterval(addPBLegend,700);
@@ -8696,8 +8667,7 @@ var JsBarcode = (() => {
   }
   function cardBarcodeMarkup(s){return '<div class="card-barcode-wrap"><svg class="visible-code128" role="img" aria-label="Barcode absensi '+escB(s.name||'')+'"></svg><small>'+escB(codeB(s))+'</small></div>'}
   window.renderStudentCardBarcode=function(root,s){if(!root||!s)return;let box=root.querySelector('.card-qr,.student-card-qr,.id-card-qr,.qr-box,[data-card-qr]');if(!box){box=document.createElement('div');box.className='card-qr';root.appendChild(box)}box.innerHTML=cardBarcodeMarkup(s);drawCode128(box.querySelector('svg'),s)};
-  window.openA4StudentCards=async function(list,title='ID Card Siswa SWIMORA'){const rows=(list||[]).filter(Boolean);if(!rows.length)return toast('Tidak ada siswa yang dipilih.','error');const svgs=rows.map(s=>{const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');drawCode128(svg,s);return svg.outerHTML});const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser.','error');const cards=rows.map((s,i)=>'<article class="print-card"><div class="print-head"><div class="print-brand"><b>SWIMORA</b><span>TRUDGEN SWIMMING CLUB</span></div><div class="print-title">ID CARD SISWA</div></div><div class="print-body"><div><div class="print-name">'+escB(s.name||'-')+'</div><span class="print-pill">'+escB(s.class||'Siswa')+'</span><div class="print-info"><div><span>ID</span><b>'+escB(s.id||'-')+'</b></div><div><span>STATUS</span><b>'+escB(s.status||'Aktif')+'</b></div><div><span>ORANG TUA</span><b>'+escB(s.parent||'-')+'</b></div></div></div><div class="print-barcode">'+svgs[i]+'<small>'+escB(codeB(s))+'</small></div></div><div class="print-foot"><span>SWIMORA • MEMBER CARD</span><span>SCAN UNTUK ABSENSI</span></div></article>').join('');w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><title>'+escB(title)+'</title><style>'+cardStyles+' .print-barcode{width:190px;min-height:92px;background:#fff;border:2px solid #071a2d;border-radius:8px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center}.print-barcode svg{width:178px;height:76px;display:block}.print-barcode small{font:800 9px monospace;color:#071a2d;letter-spacing:.3px}</style></head><body><div class="print-sheet">'+cards+'</div><script>window.onload=function(){setTimeout(function(){window.print()},500)}<\\/script>
-</body></html>');w.document.close();toast('ID card dengan barcode garis siap dicetak. Pilih Background graphics saat Save as PDF.')};
+  window.openA4StudentCards=async function(list,title='ID Card Siswa SWIMORA'){const rows=(list||[]).filter(Boolean);if(!rows.length)return toast('Tidak ada siswa yang dipilih.','error');const svgs=rows.map(s=>{const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');drawCode128(svg,s);return svg.outerHTML});const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser.','error');const cards=rows.map((s,i)=>'<article class="print-card"><div class="print-head"><div class="print-brand"><b>SWIMORA</b><span>TRUDGEN SWIMMING CLUB</span></div><div class="print-title">ID CARD SISWA</div></div><div class="print-body"><div><div class="print-name">'+escB(s.name||'-')+'</div><span class="print-pill">'+escB(s.class||'Siswa')+'</span><div class="print-info"><div><span>ID</span><b>'+escB(s.id||'-')+'</b></div><div><span>STATUS</span><b>'+escB(s.status||'Aktif')+'</b></div><div><span>ORANG TUA</span><b>'+escB(s.parent||'-')+'</b></div></div></div><div class="print-barcode">'+svgs[i]+'<small>'+escB(codeB(s))+'</small></div></div><div class="print-foot"><span>SWIMORA • MEMBER CARD</span><span>SCAN UNTUK ABSENSI</span></div></article>').join('');w.document.write('<!doctype html><html lang="id"><head><meta charset="utf-8"><title>'+escB(title)+'</title><style>'+cardStyles+' .print-barcode{width:190px;min-height:92px;background:#fff;border:2px solid #071a2d;border-radius:8px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center}.print-barcode svg{width:178px;height:76px;display:block}.print-barcode small{font:800 9px monospace;color:#071a2d;letter-spacing:.3px}</style></head><body><div class="print-sheet">'+cards+'</div><script>window.onload=function(){setTimeout(function(){window.print()},500)}<\\/script></body></html>');w.document.close();toast('ID card dengan barcode garis siap dicetak. Pilih Background graphics saat Save as PDF.')};
   const st=document.createElement('style');st.textContent='.card-qr,.card-barcode-wrap{display:flex!important;flex-direction:column;align-items:center;gap:3px;background:#fff!important;border:2px solid #071a2d;border-radius:10px;padding:7px;min-width:194px;min-height:92px}.card-barcode-wrap svg{width:180px!important;height:72px!important;display:block!important;background:#fff!important}.card-barcode-wrap small{font:800 9px monospace;color:#071a2d;letter-spacing:.3px}.print-qr{display:none!important}.scanner-focus-box{width:min(78vw,360px)!important;height:min(25vw,105px)!important}.scanner-focus-line{width:min(78vw,360px)!important;left:calc(50% - min(78vw,360px)/2)!important}';document.head.appendChild(st);
 })();
 
@@ -8925,8 +8895,7 @@ const code=s=>String(s?.barcode||s?.qrCode||s?.memberCode||s?.id||'').trim();
 window.openA4StudentCards=function(list,title='ID Card Atlet SWIMORA'){
  const rows=(list||[]).filter(Boolean);if(!rows.length)return toast('Tidak ada atlet terdaftar.','error');
  const cards=rows.map(s=>{const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');if(typeof window.drawCode128==='function')window.drawCode128(svg,s);else if(window.JsBarcode)JsBarcode(svg,'SWIMORA-'+code(s),{format:'CODE128',width:1.35,height:38,displayValue:true,fontSize:8,margin:2});return`<article class="pdf-card"><div class="pdf-head"><div><b>TRUDGEN</b><span>SWIMMING CLUB</span></div><strong>ID CARD</strong></div><div class="pdf-main"><div><h2>${E(s.name||'-')}</h2><em>${E(s.class||'Atlet')}</em><p><b>ID</b> ${E(s.id||'-')}</p><p><b>SEKOLAH</b> ${E(s.school||'-')}</p></div><div class="pdf-code">${svg.outerHTML}<small>${E(code(s))}</small></div></div><div class="pdf-foot"><span>SCAN UNTUK IDENTITAS</span><span>${E(s.status||'Aktif')}</span></div></article>`}).join('');
- const w=window.open('','_blank');if(!w)return toast('Izinkan pop-up untuk membuat PDF.','error');w.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${E(title)}</title><style>@page{size:A4 portrait;margin:8mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#102b3c}.pdf-sheet{display:grid;grid-template-columns:85.6mm 85.6mm;grid-auto-rows:54mm;gap:4mm 8mm;justify-content:center}.pdf-card{width:85.6mm;height:54mm;border:1px solid #aecbd7;border-radius:3mm;overflow:hidden;background:#fff;display:flex;flex-direction:column;break-inside:avoid}.pdf-head{height:12mm;padding:3mm 4mm;background:linear-gradient(135deg,#061827,#08728d);color:#fff;display:flex;justify-content:space-between;align-items:center}.pdf-head b{display:block;font-size:13px;letter-spacing:1px}.pdf-head span{display:block;font-size:6px;letter-spacing:1px;opacity:.75}.pdf-head strong{font-size:7px;letter-spacing:1px}.pdf-main{display:grid;grid-template-columns:1fr 33mm;gap:2mm;align-items:center;padding:3mm 4mm;flex:1}.pdf-main h2{font-size:11px;margin:0 0 2mm;line-height:1.1}.pdf-main em{font-size:7px;color:#08728d;font-style:normal;font-weight:bold}.pdf-main p{font-size:6.5px;margin:1.5mm 0;color:#4b6875}.pdf-main p b{display:inline-block;width:14mm;font-size:5.5px;color:#76909b}.pdf-code{height:24mm;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #d5e3e8;border-radius:2mm;background:#fff}.pdf-code svg{width:30mm;height:14mm;display:block}.pdf-code small{font:700 6px monospace;color:#071a2d;margin-top:1mm}.pdf-foot{border-top:1px dashed #c7dbe3;padding:1.7mm 4mm;display:flex;justify-content:space-between;font-size:5.5px;color:#718792}@media print{.pdf-sheet{break-after:page}.pdf-sheet:last-child{break-after:auto}}</style></head><body><div class="pdf-sheet">${cards}</div><script>window.onload=()=>setTimeout(()=>window.print(),500)<\/script>
-</body></html>`);w.document.close();toast('Kartu A4 siap. Pilih “Save as PDF” untuk mengunduh PDF.');
+ const w=window.open('','_blank');if(!w)return toast('Izinkan pop-up untuk membuat PDF.','error');w.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${E(title)}</title><style>@page{size:A4 portrait;margin:8mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;color:#102b3c}.pdf-sheet{display:grid;grid-template-columns:85.6mm 85.6mm;grid-auto-rows:54mm;gap:4mm 8mm;justify-content:center}.pdf-card{width:85.6mm;height:54mm;border:1px solid #aecbd7;border-radius:3mm;overflow:hidden;background:#fff;display:flex;flex-direction:column;break-inside:avoid}.pdf-head{height:12mm;padding:3mm 4mm;background:linear-gradient(135deg,#061827,#08728d);color:#fff;display:flex;justify-content:space-between;align-items:center}.pdf-head b{display:block;font-size:13px;letter-spacing:1px}.pdf-head span{display:block;font-size:6px;letter-spacing:1px;opacity:.75}.pdf-head strong{font-size:7px;letter-spacing:1px}.pdf-main{display:grid;grid-template-columns:1fr 33mm;gap:2mm;align-items:center;padding:3mm 4mm;flex:1}.pdf-main h2{font-size:11px;margin:0 0 2mm;line-height:1.1}.pdf-main em{font-size:7px;color:#08728d;font-style:normal;font-weight:bold}.pdf-main p{font-size:6.5px;margin:1.5mm 0;color:#4b6875}.pdf-main p b{display:inline-block;width:14mm;font-size:5.5px;color:#76909b}.pdf-code{height:24mm;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #d5e3e8;border-radius:2mm;background:#fff}.pdf-code svg{width:30mm;height:14mm;display:block}.pdf-code small{font:700 6px monospace;color:#071a2d;margin-top:1mm}.pdf-foot{border-top:1px dashed #c7dbe3;padding:1.7mm 4mm;display:flex;justify-content:space-between;font-size:5.5px;color:#718792}@media print{.pdf-sheet{break-after:page}.pdf-sheet:last-child{break-after:auto}}</style></head><body><div class="pdf-sheet">${cards}</div><script>window.onload=()=>setTimeout(()=>window.print(),500)<\/script></body></html>`);w.document.close();toast('Kartu A4 siap. Pilih “Save as PDF” untuk mengunduh PDF.');
 };
 window.downloadAllStudentCards=function(){const list=(db.students||[]).filter(s=>s.status!=='Nonaktif');openA4StudentCards(list,'Semua ID Card Atlet SWIMORA')};
 window.printStudentCards=window.downloadAllStudentCards;
@@ -8947,44 +8916,9 @@ function mountReportClass(){const v=document.getElementById('view-reports');if(!
 function renderReportClassPanel(){const p=reportDescriptions[document.getElementById('reportClassFilter')?.value||''];const e=document.getElementById('reportClassPanel');if(!e)return;e.innerHTML=p.items?`<div><b>Indikator Raport ${E(p.title)}</b><p>${E(p.desc)}</p></div><div class="report-indicator-list">${p.items.map(x=>`<span>${E(x)}</span>`).join('')}</div>`:`<b>Indikator Raport</b><p>${E(p.desc)}</p>`}
 const oldReports=window.renderReports;window.renderReports=function(){const r=oldReports?.apply(this,arguments);const f=document.getElementById('reportClassFilter')?.value;if(f){const tbody=document.getElementById('reportTable');if(tbody)tbody.querySelectorAll('tr').forEach(tr=>{const text=tr.textContent||'';const s=(db.students||[]).find(x=>text.includes(x.name));if(s&&s.class!==f)tr.remove()})}return r};setInterval(mountReportClass,700);
 const rptStyle=document.createElement('style');rptStyle.textContent='.report-class-panel{margin:0 0 16px;padding:16px 18px;border:1px solid #c9e5ea;border-radius:14px;background:linear-gradient(135deg,#f2fbfc,#fff);color:#20566a}.report-class-panel b{color:#087c82;font-size:16px}.report-class-panel p{margin:5px 0 10px;color:#5d7480;font-size:12px}.report-indicator-list{display:flex;flex-wrap:wrap;gap:6px}.report-indicator-list span{padding:6px 9px;border-radius:99px;background:#e2f6f4;color:#146878;font-size:11px;font-weight:700}';document.head.appendChild(rptStyle);
-/* V17.3 — Tenant access UX: temporary credentials + first-login password change. */
-window.openTenantAccessModal=async function(tenantNo){
-  const t=(window.superAdminTenants||[]).find(x=>Number(x.tenant_no)===Number(tenantNo));
-  if(!t)return toast('Tenant tidak ditemukan.','error');
-  openModal('Akses Login Tenant',`<div class="sa-modal-grid"><div class="field full"><label>Kode Tenant</label><input id="tenantAccessCode" value="${esc(t.code||'')}" readonly></div><div class="field full"><label>Email Login Owner</label><input id="tenantAccessEmail" type="email" placeholder="owner@klub.com"></div><div class="field full"><label>Password sementara</label><input id="tenantAccessTemp" type="text" value="${temporaryOwnerPassword()}" minlength="12"></div><div class="field full"><div class="hint"><b>Alur yang disarankan:</b> Super Admin memberikan kode/email + password sementara. Setelah login pertama, owner mengganti passwordnya sendiri melalui menu Keamanan. Password tidak disimpan di tabel aplikasi.</div></div></div>`,`Simpan Akses`,`saveTenantAccess(${Number(tenantNo)})`);
-};
-window.saveTenantAccess=async function(tenantNo){
-  const email=val('tenantAccessEmail').trim(),temp=val('tenantAccessTemp').trim();if(!email||temp.length<8)return toast('Email dan password sementara minimal 8 karakter wajib diisi.','error');
-  const c=getSupabaseClient();if(!c)return toast('Koneksi Supabase belum tersedia.','error');
-  const code=val('tenantAccessCode');
-  try{let r=await c.rpc('create_swimora_owner',{p_tenant_no:Number(tenantNo),p_email:email,p_password:temp,p_role:'owner'});if(r.error){const link=await c.rpc('assign_swimora_tenant_member',{p_tenant_no:Number(tenantNo),p_email:email,p_role:'owner',p_is_active:true});if(link.error)throw new Error(r.error.message+' | '+link.error.message);throw new Error('Akun owner sudah ada atau RPC pembuatan akun menolak. Gunakan reset password Supabase untuk akun yang sudah ada.');}closeModal();openModal('Akses Tenant Siap',`<div class="credential-result"><div class="success-icon">✓</div><h3>Tenant #${String(tenantNo).padStart(3,'0')}</h3><div class="credential-box"><b>Kode Tenant</b><code>${esc(code||'')}</code><b>Email Login</b><code>${esc(email)}</code><b>Password sementara</b><code>${esc(temp)}</code></div><p class="muted">Akun dibuat sebagai owner. Minta owner login lalu mengganti password melalui menu Keamanan.</p></div>`,'Tutup','closeModal()');}catch(err){toast('Akses tenant belum dapat disimpan: '+(err?.message||err),'error');}
-};
-/* V17.3 — Tenant lifecycle: delete via protected RPC first, direct delete only as fallback. */
-window.deleteTenant=async function(id,name){
-  if(!id)return toast('ID tenant tidak ditemukan.','error');
-  if(Number((window.superAdminTenants||[]).find(x=>x.id===id)?.tenant_no)===1)return toast('Tenant #001 tidak dapat dihapus dari dashboard ini.','error');
-  const c=getSupabaseClient();if(!c)return toast('Koneksi Supabase belum tersedia.','error');
-  const club=(window.superAdminTenants||[]).find(x=>x.id===id);
-  const sub=String(club?.subscription_status||'').toLowerCase();
-  const status=String(club?.status||'').toLowerCase();
-  const eligible=status!=='active'||['inactive','expired','cancelled','canceled','unpaid'].includes(sub);
-  if(!eligible)return toast('Tenant masih aktif. Nonaktifkan/akhiri langganan terlebih dahulu sebelum menghapus.','error');
-  const ok=confirm('HAPUS TENANT PERMANEN\n\n'+name+'\n\nData siswa, user tenant, kelas, paket, billing, dan data cloud yang terikat tenant dapat ikut dihapus. Tindakan ini tidak dapat dibatalkan.\n\nLanjutkan?');
-  if(!ok)return;
-  try{
-    const rpc=await c.rpc('delete_swimora_tenant',{p_tenant_id:id});
-    if(!rpc.error){toast('Tenant dan data terkait berhasil dihapus.');await refreshSuperAdminDashboard();return;}
-    console.warn('delete_swimora_tenant RPC gagal:',rpc.error);
-    const direct=await c.from('clubs').delete().eq('id',id);
-    if(direct.error)throw new Error('Database menolak penghapusan. Buat/aktifkan RPC delete_swimora_tenant di Supabase agar penghapusan tenant dilakukan secara aman. Detail: '+direct.error.message);
-    toast('Tenant berhasil dihapus.');await refreshSuperAdminDashboard();
-  }catch(err){toast('Gagal menghapus tenant: '+(err?.message||err),'error');}
-};
-})();
-
-(function mountTenantSecurity(){
-  const mount=()=>{const v=document.getElementById('view-settings');if(!v||document.getElementById('tenantPasswordSecurity'))return;const host=v.querySelector('.card');if(!host)return;const box=document.createElement('div');box.id='tenantPasswordSecurity';box.className='card';box.style.marginTop='16px';box.innerHTML='<div class="card-head"><div><h3>Keamanan Akun Tenant</h3><p>Ganti password akun yang sedang login.</p></div></div><div class="form-grid"><div class="field"><label>Password Baru</label><input id="tenantNewPassword" type="password" minlength="8" autocomplete="new-password"></div><div class="field"><label>Konfirmasi Password</label><input id="tenantNewPassword2" type="password" minlength="8" autocomplete="new-password"></div></div><button class="btn btn-primary" type="button" onclick="changeTenantPassword()">🔐 Ganti Password</button><div class="hint" style="margin-top:10px">Gunakan password unik, minimal 8 karakter; lebih panjang lebih baik.</div>';v.appendChild(box)};mount();setInterval(mount,1200);
-  window.changeTenantPassword=async function(){const a=val('tenantNewPassword'),b=val('tenantNewPassword2');if(a.length<8)return toast('Password minimal 8 karakter.','error');if(a!==b)return toast('Konfirmasi password tidak sama.','error');const c=getSupabaseClient();if(!c)return toast('Koneksi Supabase belum tersedia.','error');try{const r=await c.auth.updateUser({password:a});if(r.error)throw r.error;document.getElementById('tenantNewPassword').value='';document.getElementById('tenantNewPassword2').value='';toast('Password berhasil diubah.');}catch(e){toast('Gagal mengubah password: '+(e?.message||e),'error')}};
+/* Tenant: delete action with explicit confirmation; credential workflow remains from existing RPC */
+window.deleteTenant=function(id,name){if(!id)return;if(!confirm('Hapus tenant '+name+'? Data tenant yang terkait dapat ikut terhapus sesuai aturan database.'))return;const c=getSupabaseClient();if(!c)return toast('Koneksi Supabase belum tersedia.','error');c.from('clubs').delete().eq('id',id).then(({error})=>{if(error)return toast('Tenant tidak dapat dihapus: '+error.message,'error');toast('Tenant berhasil dihapus.');refreshSuperAdminDashboard()})};
+const oldRefresh=window.refreshSuperAdminDashboard;window.refreshSuperAdminDashboard=async function(){const r=await oldRefresh?.apply(this,arguments);setTimeout(()=>{document.querySelectorAll('#tenantGrid .tenant-card').forEach(card=>{if(card.querySelector('.delete-tenant-btn'))return;const no=card.querySelector('.tenant-no')?.textContent||'';const tenantNo=(no.match(/\d+/)||[])[0];const tenant=(window.superAdminTenants||[]).find(x=>String(x.tenant_no)===String(Number(tenantNo)));const b=document.createElement('button');b.className='btn btn-outline btn-sm delete-tenant-btn';b.textContent='Hapus Tenant';b.onclick=()=>deleteTenant(tenant?.id,tenant?.name||no);card.querySelector('.tenant-actions')?.appendChild(b)})},150);return r};
 })();
 </script>
 <script>
@@ -9022,8 +8956,7 @@ window.deleteTenant=async function(id,name){
     const logo=typeof currentClubLogo==='function'?currentClubLogo():'';
     const body=mode==='single'?`<div class="sw-print-page">${printableCardFinal(rows[0],logo)}</div>`:`<div class="sw-print-page"><div class="sw-card-sheet">${rows.map(s=>printableCardFinal(s,logo)).join('')}</div></div>`;
     const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser. Izinkan popup untuk mencetak.','error');
-    w.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escCardFinal(title||'ID Card Siswa')}</title>${cardPrintStylesFinal()}</head><body>${body}<script>window.onload=function(){setTimeout(function(){window.print()},450)}<\\/script>
-</body></html>`);w.document.close();
+    w.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escCardFinal(title||'ID Card Siswa')}</title>${cardPrintStylesFinal()}</head><body>${body}<script>window.onload=function(){setTimeout(function(){window.print()},450)}<\\/script></body></html>`);w.document.close();
   }
   window.printStudentCard=function(id){const s=student(id);if(s)openPrintableFinal([s],'ID Card '+s.name,'single')};
   window.downloadStudentCard=function(id){const s=student(id);if(s)openPrintableFinal([s],'ID Card '+s.name,'single')};
@@ -9146,8 +9079,7 @@ function cardHTML(s){
   </article>`;
 }
 function cardsDocument(list,title){
-  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${escQ(title||'ID Card Siswa')}</title><style>${CARD_CSS}</style></head><body>${list.map(cardHTML).join('')}
-</body></html>`;
+  return `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${escQ(title||'ID Card Siswa')}</title><style>${CARD_CSS}</style></head><body>${list.map(cardHTML).join('')}</body></html>`;
 }
 window.studentCardMarkup=cardHTML;
 window.printStudentCard=function(id){
@@ -20001,8 +19933,7 @@ window.printPBPeriodization=function(){
   const rows=(arr,label)=>((arr||[]).map(a=>`<tr><td><b>${label}</b></td><td>${E(a.dose||'-')}</td><td>${E(a.target||'-')}</td><td>${E(a.rest||'-')}</td><td>${E(a.intensity||'-')}</td><td>${E(a.note||'-')}</td></tr>`).join(''));
   const weeks=p.plan.map(x=>`<section class="week"><div class="weektop"><div><h2>Minggu ${x.week} — ${E(x.phase)} ${x.deload?'• Deload / Peak':''}</h2><p>${E(x.focus)}</p></div><b>${x.volume} m</b></div><p><b>Intensitas:</b> ${E(x.intensity||'-')}</p>${(x.sessions||[]).map(z=>`<article class="session"><h3>${E(z.title||z.day||'Sesi')}</h3><p><b>Tujuan:</b> ${E(z.objective||'-')} • <b>Sistem energi:</b> ${E(z.energy||'-')}</p><table><thead><tr><th>Bagian</th><th>Dosis</th><th>Target</th><th>Rest</th><th>Intensitas</th><th>Catatan</th></tr></thead><tbody>${rows(z.warmUp,'Warm-up')}${rows(z.preMain,'Pre-main')}${rows(z.mainSet,'Main set')}${rows(z.recovery,'Recovery / skill')}${rows(z.coolDown,'Cool-down')}</tbody></table>${z.coachNote?`<div class="coach"><b>Catatan pelatih:</b> ${E(z.coachNote)}</div>`:''}</article>`).join('')}</section>`).join('');
   const html=`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Program PB Profesional — ${E(s.name)}</title><style>
-*{box-sizing:border-box}@page{size:A4;margin:11mm}body{font-family:Arial,Helvetica,sans-serif;color:#173246;font-size:9pt;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.head{display:grid;grid-template-columns:58px 1fr 110px;gap:12px;align-items:center;border-bottom:3px solid #0a6d9c;padding-bottom:9px;margin-bottom:12px}.logo{width:54px;height:54px;object-fit:contain;border-radius:14px;background:#071a2b}.brand b{display:block;font-size:18px}.brand span{font-size:8pt;color:#617786}.meta{text-align:right;font-size:8pt;color:#617786;line-height:1.5}h1{font-size:17pt;margin:0 0 4px;color:#071a2d}.sub{margin:0 0 9px;color:#536c7a}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:9px 0}.metric{border:1px solid #cbdbe3;border-radius:7px;padding:7px}.metric b{display:block;font-size:12pt;color:#0a6d9c}.metric span{font-size:7pt;color:#637986}.box{border:1px solid #cbdbe3;border-radius:7px;padding:8px;margin:8px 0}.week{border:1px solid #cbdbe3;border-radius:8px;padding:9px;margin:0 0 9px;break-inside:avoid}.weektop{display:flex;justify-content:space-between;gap:10px}.week h2{font-size:11pt;color:#0a6d9c;margin:0}.weektop>b{font-size:11pt}.week p{margin:4px 0;line-height:1.4;color:#536c7a}.session{border-top:1px solid #e2ebef;margin-top:7px;padding-top:7px;break-inside:avoid}.session h3{font-size:9.5pt;margin:0 0 3px}.session p{margin:3px 0;color:#536c7a}table{width:100%;border-collapse:collapse;margin-top:5px;font-size:7.2pt}th,td{border:1px solid #d4e0e6;padding:4px;vertical-align:top;text-align:left}th{background:#eaf5f7;color:#174c60}.coach{margin-top:5px;padding:5px 7px;background:#f4f8fa;border-left:3px solid #18a8b8;font-size:7.2pt}.note{font-size:7.5pt;color:#667d89;margin-top:8px}thead{display:table-header-group}tr{break-inside:avoid}</style></head><body><header class="head"><img class="logo" src="${SWIMORA_PLATFORM_LOGO}"><div class="brand"><b>SWIMORA</b><span>Sport Science Training Management</span></div><div class="meta">Dicetak ${new Date().toLocaleString('id-ID')}<br>Program PB Profesional</div></header><h1>Program Latihan Menuju Puncak Kompetisi</h1><p class="sub">Atlet: <b>${E(s.name)}</b> • Kelas: ${E(s.class)} • Nomor: ${E(p.race)}</p><div class="summary"><div class="metric"><b>${E(p.pb)}</b><span>Personal Best</span></div><div class="metric"><b>${p.weeks} minggu</b><span>Durasi</span></div><div class="metric"><b>${E(fmtDate(p.competitionDate))}</b><span>Kompetisi</span></div><div class="metric"><b>${E(p.energy.eventClass||'-')}</b><span>Profil nomor</span></div></div><div class="box"><b>Profil energi:</b> ${E(p.energy.primary||'-')} • Zona ${E(p.energy.zone||'-')} • Rest utama ${E(p.energy.rest||'-')}</div>${weeks}<p class="note"><b>Catatan:</b> Sesuaikan volume, intensitas, teknik, RPE, recovery, usia, training age, kalender kompetisi dan respons atlet.</p><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),500));<\/script>
-</body></html>`;
+*{box-sizing:border-box}@page{size:A4;margin:11mm}body{font-family:Arial,Helvetica,sans-serif;color:#173246;font-size:9pt;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}.head{display:grid;grid-template-columns:58px 1fr 110px;gap:12px;align-items:center;border-bottom:3px solid #0a6d9c;padding-bottom:9px;margin-bottom:12px}.logo{width:54px;height:54px;object-fit:contain;border-radius:14px;background:#071a2b}.brand b{display:block;font-size:18px}.brand span{font-size:8pt;color:#617786}.meta{text-align:right;font-size:8pt;color:#617786;line-height:1.5}h1{font-size:17pt;margin:0 0 4px;color:#071a2d}.sub{margin:0 0 9px;color:#536c7a}.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:9px 0}.metric{border:1px solid #cbdbe3;border-radius:7px;padding:7px}.metric b{display:block;font-size:12pt;color:#0a6d9c}.metric span{font-size:7pt;color:#637986}.box{border:1px solid #cbdbe3;border-radius:7px;padding:8px;margin:8px 0}.week{border:1px solid #cbdbe3;border-radius:8px;padding:9px;margin:0 0 9px;break-inside:avoid}.weektop{display:flex;justify-content:space-between;gap:10px}.week h2{font-size:11pt;color:#0a6d9c;margin:0}.weektop>b{font-size:11pt}.week p{margin:4px 0;line-height:1.4;color:#536c7a}.session{border-top:1px solid #e2ebef;margin-top:7px;padding-top:7px;break-inside:avoid}.session h3{font-size:9.5pt;margin:0 0 3px}.session p{margin:3px 0;color:#536c7a}table{width:100%;border-collapse:collapse;margin-top:5px;font-size:7.2pt}th,td{border:1px solid #d4e0e6;padding:4px;vertical-align:top;text-align:left}th{background:#eaf5f7;color:#174c60}.coach{margin-top:5px;padding:5px 7px;background:#f4f8fa;border-left:3px solid #18a8b8;font-size:7.2pt}.note{font-size:7.5pt;color:#667d89;margin-top:8px}thead{display:table-header-group}tr{break-inside:avoid}</style></head><body><header class="head"><img class="logo" src="${SWIMORA_PLATFORM_LOGO}"><div class="brand"><b>SWIMORA</b><span>Sport Science Training Management</span></div><div class="meta">Dicetak ${new Date().toLocaleString('id-ID')}<br>Program PB Profesional</div></header><h1>Program Latihan Menuju Puncak Kompetisi</h1><p class="sub">Atlet: <b>${E(s.name)}</b> • Kelas: ${E(s.class)} • Nomor: ${E(p.race)}</p><div class="summary"><div class="metric"><b>${E(p.pb)}</b><span>Personal Best</span></div><div class="metric"><b>${p.weeks} minggu</b><span>Durasi</span></div><div class="metric"><b>${E(fmtDate(p.competitionDate))}</b><span>Kompetisi</span></div><div class="metric"><b>${E(p.energy.eventClass||'-')}</b><span>Profil nomor</span></div></div><div class="box"><b>Profil energi:</b> ${E(p.energy.primary||'-')} • Zona ${E(p.energy.zone||'-')} • Rest utama ${E(p.energy.rest||'-')}</div>${weeks}<p class="note"><b>Catatan:</b> Sesuaikan volume, intensitas, teknik, RPE, recovery, usia, training age, kalender kompetisi dan respons atlet.</p><script>window.addEventListener('load',()=>setTimeout(()=>window.print(),500));<\/script></body></html>`;
   try{w.document.open();w.document.write(html);w.document.close()}catch(e){try{w.close()}catch(_){};toast('Dokumen cetak gagal dibuat: '+(e.message||e),'error');return}
   closeModal();
 };
@@ -20241,396 +20172,6 @@ setTimeout(mountPlatformLogo,50);setTimeout(mountPlatformLogo,500);
       el.appendChild(panel);
     }catch(_e){}
   };
-})();
-</script>
-
-
-
-<script>
-/* SWIMORA V17.4 — Tenant code login + USB 2D scanner attendance + first-login security */
-(function(){
-  'use strict';
-  const escV=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const toastV=(m,t)=>{try{toast(m,t)}catch(_){alert(m)}};
-
-  /* ---------- TENANT LOGIN BY CODE ---------- */
-  const loginUser=document.getElementById('adminUser');
-  if(loginUser){
-    loginUser.type='text';
-    loginUser.placeholder='Kode Tenant (atau email Super Admin)';
-    const lab=document.querySelector('label[for="adminUser"]');
-    if(lab)lab.textContent='Kode Tenant / Email Super Admin';
-    loginUser.autocomplete='username';
-  }
-
-  async function resolveTenantLoginEmail(code){
-    const c=getSupabaseClient();
-    if(!c)throw new Error('Koneksi Supabase belum siap.');
-    const clean=String(code||'').trim().toUpperCase();
-    if(!clean)throw new Error('Kode Tenant wajib diisi.');
-    const r=await c.rpc('resolve_swimora_tenant_login',{p_code:clean});
-    if(r.error)throw new Error(r.error.message||'Kode tenant belum dikonfigurasi. Jalankan SQL V17.4 di Supabase.');
-    const row=Array.isArray(r.data)?r.data[0]:r.data;
-    const email=String(row?.email||'').trim();
-    if(!email)throw new Error('Kode Tenant tidak ditemukan atau belum memiliki owner aktif.');
-    return email;
-  }
-
-  const originalLogin=window.login;
-  window.login=async function(e){
-    if(loginRole!=='admin')return originalLogin?.apply(this,arguments);
-    const identity=String(document.getElementById('adminUser')?.value||'').trim();
-    const looksLikeEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identity);
-    // IMPORTANT: Super Admin login must use the original, known-working login flow.
-    // Tenant-code resolution is only applied when the identity is NOT an email.
-    if(looksLikeEmail) return originalLogin?.apply(this,arguments);
-    e.preventDefault();
-    const password=document.getElementById('adminPass')?.value||'';
-    if(!identity||!password)return toastV('Kode Tenant dan password wajib diisi.','error');
-    const input=document.getElementById('adminUser');
-    const originalValue=input?.value||'';
-    const submitBtn=e.submitter||document.querySelector('#loginForm button[type="submit"]');
-    try{
-      const email=await resolveTenantLoginEmail(identity);
-      if(!input)throw new Error('Kolom login tenant tidak ditemukan.');
-      input.value=email;
-      // Delegate the actual authentication, role detection and tenant loading
-      // to the original login function so no Super Admin behavior is duplicated.
-      await originalLogin?.call(this,e);
-    }catch(err){
-      const detail=typeof explainNetworkFailure==='function'?explainNetworkFailure(err):(err?.message||String(err));
-      const st=document.getElementById('loginSupabaseStatus');
-      if(st)st.innerHTML='<b style="color:#c63b4d">Login gagal:</b> '+escV(detail);
-      toastV('Login gagal: '+detail,'error');
-    }finally{
-      if(input)input.value=originalValue;
-    }
-  };
-
-  async function enforceFirstLoginPasswordChange(user){
-    const must=Boolean(user?.user_metadata?.must_change_password);
-    if(!must)return;
-    if(typeof openModal!=='function')return;
-    openModal('Wajib Ganti Password',`<div class="first-password-box"><div class="success-icon">🔐</div><h3>Selamat datang di SWIMORA</h3><p>Ini adalah password sementara dari Super Admin. Demi keamanan, buat password pribadi sebelum melanjutkan.</p><div class="form-grid"><div class="field full"><label>Password Baru</label><input id="firstTenantPassword" type="password" minlength="10" autocomplete="new-password"></div><div class="field full"><label>Konfirmasi Password</label><input id="firstTenantPassword2" type="password" minlength="10" autocomplete="new-password"></div></div><div class="hint">Minimal 10 karakter. Gunakan kombinasi huruf besar, huruf kecil, angka, dan simbol.</div></div>`,'Simpan Password','completeFirstLoginPassword()');
-  }
-  window.completeFirstLoginPassword=async function(){
-    const a=String(document.getElementById('firstTenantPassword')?.value||''),b=String(document.getElementById('firstTenantPassword2')?.value||'');
-    if(a.length<10)return toastV('Password minimal 10 karakter.','error');
-    if(a!==b)return toastV('Konfirmasi password tidak sama.','error');
-    if(!/[A-Z]/.test(a)||!/[a-z]/.test(a)||!/[0-9]/.test(a)||!/[!@#$%^&*(),.?":{}|<>_\-]/.test(a))return toastV('Password harus mengandung huruf besar, huruf kecil, angka, dan simbol.','error');
-    try{
-      const c=getSupabaseClient();const r=await c.auth.updateUser({password:a,data:{must_change_password:false}});if(r.error)throw r.error;
-      closeModal();toastV('Password berhasil diganti. Simpan baik-baik password baru Anda.');
-    }catch(err){toastV('Gagal mengganti password: '+(err?.message||err),'error')}
-  };
-
-  /* ---------- USB 2D SCANNER / TEKLEAD T-D4 ---------- */
-  let usbScannerActive=false,usbBuffer='',usbTimer=null,usbLastScan='';
-  let usbLastAt=0;
-  function attendanceReadyForScanner(){
-    const date=document.getElementById('attendanceCalendar')?.value||'';
-    if(!date){toastV('Pilih tanggal absensi terlebih dahulu.','error');return false;}
-    return true;
-  }
-  function extractScanCode(raw){
-    let v=String(raw||'').trim();
-    if(!v)return '';
-    const parts=v.split('|').map(x=>x.trim()).filter(Boolean);
-    if(parts[0]?.toUpperCase()==='SWIMORA' && parts[1]?.toUpperCase()==='ABSEN')return parts[2]||'';
-    return v;
-  }
-  function findStudentByScan(raw){
-    const code=extractScanCode(raw).toUpperCase();
-    if(!code)return null;
-    return (db.students||[]).find(s=>[s.id,s.memberCode,s.member_code,s.barcode,s.qrCode,s.qr_code].some(v=>String(v||'').trim().toUpperCase()===code))||null;
-  }
-  async function processUsbScan(raw){
-    if(!attendanceReadyForScanner())return;
-    const rawText=String(raw||'').trim();if(!rawText)return;
-    const now=Date.now();
-    if(rawText===usbLastScan && now-usbLastAt<1800)return;
-    usbLastScan=rawText;usbLastAt=now;
-    const s=findStudentByScan(rawText);
-    const status=document.getElementById('usbScannerStatus');
-    const result=document.getElementById('usbScannerResult');
-    if(!s){
-      if(status)status.innerHTML='<span class="scanner-bad">✕ Kode tidak dikenal</span> '+escV(extractScanCode(rawText));
-      if(result)result.textContent='Kartu tidak terdaftar pada tenant aktif.';
-      try{navigator.vibrate?.([120,80,120])}catch(_){ }
-      return;
-    }
-    if(status)status.innerHTML='<span class="scanner-good">✓ '+escV(s.name)+'</span> • '+escV(s.class||'Siswa');
-    if(result)result.innerHTML='<b>'+escV(s.name)+'</b><span>'+escV(s.class||'Siswa')+' • ID '+escV(codeF(s))+'</span><small>Memproses kehadiran...</small>';
-    try{
-      if(typeof markAttendanceByCode==='function')await markAttendanceByCode(s.id,'Barcode USB');
-      try{navigator.vibrate?.(80)}catch(_){ }
-      if(result)result.innerHTML='<b>✓ ABSEN BERHASIL</b><span>'+escV(s.name)+' • '+escV(s.class||'Siswa')+'</span><small>Kartu berikutnya siap dipindai.</small>';
-      setTimeout(()=>{if(result)result.innerHTML='<span>Menunggu kartu berikutnya…</span>'},1800);
-    }catch(err){
-      if(result)result.innerHTML='<b>Gagal menyimpan</b><span>'+escV(err?.message||err)+'</span>';
-    }
-  }
-  function onUsbKey(e){
-    if(!usbScannerActive||currentRole!=='admin')return;
-    const target=e.target;
-    if(target && /INPUT|TEXTAREA|SELECT/.test(target.tagName||''))return;
-    if(e.ctrlKey||e.altKey||e.metaKey)return;
-    if(e.key==='Enter'){
-      if(usbBuffer){e.preventDefault();const raw=usbBuffer;usbBuffer='';clearTimeout(usbTimer);processUsbScan(raw)}
-      return;
-    }
-    if(e.key.length!==1)return;
-    usbBuffer+=e.key;
-    clearTimeout(usbTimer);usbTimer=setTimeout(()=>usbBuffer='',180);
-  }
-  window.toggleUsbScanner=function(force){
-    const next=typeof force==='boolean'?force:!usbScannerActive;
-    usbScannerActive=next;
-    document.body.classList.toggle('usb-scanner-active',next);
-    const b=document.getElementById('usbScannerToggle');if(b)b.textContent=next?'■ Hentikan Scanner USB':'▶ Aktifkan Scanner USB';
-    const s=document.getElementById('usbScannerStatus');if(s)s.innerHTML=next?'<span class="scanner-good">● Scanner USB aktif</span> • Tempelkan QR/barcode ke T-D4':'Scanner USB belum aktif';
-    if(next)toastV('Scanner USB aktif. Arahkan/tempekan kartu ke TEKLEAD T-D4.');else{usbBuffer='';toastV('Scanner USB dihentikan.');}
-  };
-  window.openUsbAttendancePanel=function(){
-    if(!attendanceReadyForScanner())return;
-    openModal('Absensi Scanner USB 2D',`<div class="usb-attendance-shell"><div class="usb-device-card"><div class="usb-device-icon">▣</div><div><b>TEKLEAD T-D4 / 2D USB</b><span>Mode USB-KBW (Keyboard)</span></div><button id="usbScannerToggle" class="btn btn-primary btn-sm" type="button" onclick="toggleUsbScanner()">▶ Aktifkan Scanner USB</button></div><div id="usbScannerStatus" class="usb-scanner-status">Scanner USB belum aktif</div><div id="usbScannerResult" class="usb-scanner-result"><span>Hubungkan scanner ke laptop, lalu aktifkan mode scanner.</span></div><div class="usb-instructions"><b>Cara penggunaan</b><ol><li>Colok T-D4 ke USB laptop.</li><li>Pastikan mode <b>USB-KBW</b>.</li><li>Set suffix <b>ENTER</b> dari manual scanner.</li><li>Aktifkan scanner di sini.</li><li>Tempelkan QR/Barcode ID Card ke scanner.</li></ol></div></div>`,'Tutup','toggleUsbScanner(false);closeModal()');
-    toggleUsbScanner(true);
-  };
-  window.processUsbScannerText=processUsbScan;
-  document.addEventListener('keydown',onUsbKey,true);
-
-  function mountUsbButton(){
-    const v=document.getElementById('view-attendance');if(!v)return;
-    const toolbar=v.querySelector('.section-toolbar .right')||v.querySelector('.section-toolbar');
-    if(!toolbar||document.getElementById('usbAttendanceBtn'))return;
-    const b=document.createElement('button');b.id='usbAttendanceBtn';b.className='btn btn-cyan';b.type='button';b.textContent='▣ Scanner USB';b.onclick=openUsbAttendancePanel;toolbar.appendChild(b);
-  }
-  setInterval(mountUsbButton,800);mountUsbButton();
-
-
-  /* ---------- TENANT LIFECYCLE: ACTIVE -> INACTIVE -> DELETE ---------- */
-  window.deactivateTenant=async function(id,name){
-    if(!id)return toastV('ID tenant tidak ditemukan.','error');
-    const club=(window.superAdminTenants||[]).find(x=>x.id===id);
-    if(Number(club?.tenant_no)===1)return toastV('Tenant #001 tidak dapat dinonaktifkan dari dashboard ini.','error');
-    if(!confirm('Nonaktifkan tenant '+(name||club?.name||'ini')+'?\n\nTenant tidak dapat login setelah dinonaktifkan. Data tetap disimpan dan dapat diaktifkan kembali.'))return;
-    const c=getSupabaseClient();
-    try{
-      const r=await c.rpc('set_swimora_tenant_status',{p_tenant_id:id,p_status:'inactive',p_subscription_status:'cancelled'});
-      if(r.error)throw r.error;
-      toastV('Tenant dinonaktifkan. Sekarang tombol Hapus Tenant tersedia.');
-      await refreshSuperAdminDashboard();
-    }catch(err){toastV('Gagal menonaktifkan tenant: '+(err?.message||err),'error')}
-  };
-  window.reactivateTenant=async function(id,name){
-    if(!id)return;
-    const c=getSupabaseClient();
-    try{
-      const r=await c.rpc('set_swimora_tenant_status',{p_tenant_id:id,p_status:'active',p_subscription_status:'active'});
-      if(r.error)throw r.error;
-      toastV('Tenant '+(name||'')+' diaktifkan kembali.');await refreshSuperAdminDashboard();
-    }catch(err){toastV('Gagal mengaktifkan tenant: '+(err?.message||err),'error')}
-  };
-  const oldRefreshSA=window.refreshSuperAdminDashboard;
-  if(oldRefreshSA){
-    window.refreshSuperAdminDashboard=async function(){
-      const r=await oldRefreshSA.apply(this,arguments);
-      const grid=document.getElementById('tenantGrid');
-      if(!grid)return r;
-      [...grid.querySelectorAll('.tenant-card')].forEach(card=>{
-        const no=Number((card.querySelector('.tenant-no')?.textContent||'').replace(/\D/g,''));
-        const club=(window.superAdminTenants||[]).find(x=>Number(x.tenant_no)===no);
-        if(!club||no===1)return;
-        const actions=card.querySelector('.tenant-actions');if(!actions)return;
-        const inactive=String(club.status||'').toLowerCase()!=='active'||['inactive','expired','cancelled','canceled','unpaid'].includes(String(club.subscription_status||'').toLowerCase());
-        if(inactive && !actions.querySelector('[data-reactivate-tenant]')){const b=document.createElement('button');b.className='btn btn-outline btn-sm';b.setAttribute('data-reactivate-tenant','1');b.style.borderColor='#2b8a63';b.style.color='#176d4e';b.textContent='Aktifkan';b.onclick=()=>reactivateTenant(club.id,club.name);actions.insertBefore(b,actions.firstChild)}
-        if(!inactive && !actions.querySelector('[data-deactivate-tenant]')){const b=document.createElement('button');b.className='btn btn-outline btn-sm';b.setAttribute('data-deactivate-tenant','1');b.style.borderColor='#c58b28';b.style.color='#8a6212';b.textContent='Nonaktifkan';b.onclick=()=>deactivateTenant(club.id,club.name);actions.appendChild(b)}
-      });
-      return r;
-    };
-  }
-
-  /* Replace the V17.3 direct-delete fallback: deletion must go through the protected RPC. */
-  window.deleteTenant=async function(id,name){
-    if(!id)return toastV('ID tenant tidak ditemukan.','error');
-    const club=(window.superAdminTenants||[]).find(x=>x.id===id);
-    if(Number(club?.tenant_no)===1)return toastV('Tenant #001 tidak dapat dihapus.','error');
-    const inactive=String(club?.status||'').toLowerCase()!=='active'||['inactive','expired','cancelled','canceled','unpaid'].includes(String(club?.subscription_status||'').toLowerCase());
-    if(!inactive)return toastV('Tenant masih aktif. Nonaktifkan/akhiri langganan terlebih dahulu.','error');
-    if(!confirm('HAPUS PERMANEN\n\n'+(name||club?.name||'Tenant')+'\n\nSemua data tenant yang terikat akan dihapus. Tindakan ini tidak dapat dibatalkan.\n\nLanjutkan?'))return;
-    const c=getSupabaseClient();
-    try{
-      const r=await c.rpc('delete_swimora_tenant',{p_tenant_id:id});
-      if(r.error)throw new Error(r.error.message+' — pastikan SQL SWIMORA V17.4 sudah dijalankan di Supabase.');
-      toastV('Tenant dan data terkait berhasil dihapus.');await refreshSuperAdminDashboard();
-    }catch(err){toastV('Gagal menghapus tenant: '+(err?.message||err),'error')}
-  };
-
-  /* Mark newly-created temporary-password accounts as requiring a password change. */
-  window.markTenantOwnerFirstLogin=async function(email){
-    const c=getSupabaseClient();if(!c||!email)return;
-    try{const r=await c.rpc('set_swimora_password_change_required',{p_email:String(email).trim(),p_required:true});if(r.error)console.warn('Password policy RPC:',r.error)}catch(e){console.warn(e)}
-  };
-  const oldCreateTenant=window.createTenantFromModal;
-  if(oldCreateTenant){
-    window.createTenantFromModal=async function(){
-      const email=String(document.getElementById('saOwnerEmail')?.value||'').trim();
-      const result=await oldCreateTenant.apply(this,arguments);
-      if(email)await markTenantOwnerFirstLogin(email);
-      return result;
-    };
-  }
-  const oldSaveAccess=window.saveTenantAccess;
-  if(oldSaveAccess){
-    window.saveTenantAccess=async function(tenantNo){
-      const email=String(document.getElementById('tenantAccessEmail')?.value||'').trim();
-      const result=await oldSaveAccess.apply(this,arguments);
-      if(email)await markTenantOwnerFirstLogin(email);
-      return result;
-    };
-  }
-
-  const style=document.createElement('style');style.textContent=`
-  .first-password-box{text-align:left}.first-password-box .success-icon{font-size:34px}.usb-attendance-shell{display:grid;gap:14px}.usb-device-card{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:16px;border:1px solid #cfe4e8;border-radius:16px;background:linear-gradient(135deg,#f4fbfc,#fff)}.usb-device-icon{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#071a2d;color:#42d1c3;font-size:22px}.usb-device-card b,.usb-device-card span{display:block}.usb-device-card span{font-size:11px;color:#71828c;margin-top:3px}.usb-scanner-status{padding:12px 14px;border-radius:12px;background:#071a2d;color:#dcecf6;font-size:13px}.scanner-good{color:#8df0b5;font-weight:900}.scanner-bad{color:#ff8f9b;font-weight:900}.usb-scanner-result{min-height:110px;border:1px dashed #b9d6dc;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:18px;background:#fbfefe}.usb-scanner-result b{font-size:20px;color:#087c82}.usb-scanner-result span{font-size:13px;margin-top:5px}.usb-scanner-result small{margin-top:7px;color:#70838c}.usb-instructions{font-size:12px;color:#566b74;padding:13px 15px;border-radius:12px;background:#f4f8f9}.usb-instructions ol{margin:8px 0 0 18px;padding:0;line-height:1.7}.usb-scanner-active #usbAttendanceBtn{box-shadow:0 0 0 3px rgba(36,167,168,.15)}@media(max-width:680px){.usb-device-card{grid-template-columns:auto 1fr}.usb-device-card button{grid-column:1/-1}.usb-scanner-result{min-height:90px}}
-  `;document.head.appendChild(style);
-})();
-
-</script>
-<script>
-/* ============================================================
-   SWIMORA V17.5 — BRANDED PUBLIC REGISTRATION LINKS
-   Pretty URL: /daftar/<slug-klub>
-   Falls back to ?register=1&club=<slug> when needed.
-   ============================================================ */
-(function(){
-  'use strict';
-  const originalCopyPublicRegistrationLink=window.copyPublicRegistrationLink;
-  const originalOpenPublicRegistration=window.openPublicRegistration;
-  const originalSubmitPublicRegistration=window.submitPublicRegistration;
-
-  function slugifyClubName(name){
-    const s=String(name||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
-      .replace(/&/g,' dan ').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
-    return s || 'klub';
-  }
-  function shortClubSlug(club){
-    if(!club)return 'klub';
-    if(Number(club.tenant_no)===1 || String(club.code||'').toUpperCase()==='TRUDGEN')return 'trudgensc';
-    const explicit=String(club.slug||'').trim();
-    if(explicit)return slugifyClubName(explicit).replace(/-swimming-club$/,'-sc');
-    const code=String(club.code||'').trim();
-    if(code)return slugifyClubName(code);
-    const name=slugifyClubName(club.name||'klub');
-    return name.replace(/-swimming-club$/,'-sc');
-  }
-  function publicRegistrationPath(slug){return '/pendaftaran/'+encodeURIComponent(String(slug||'klub'))}
-  function publicRegistrationLinkForClub(club){
-    const base=location.origin && location.origin!=='null' ? location.origin : '';
-    const slug=shortClubSlug(club);
-    if(base)return base+publicRegistrationPath(slug);
-    const u=new URL(location.href);u.search='';u.hash='';u.pathname=publicRegistrationPath(slug);return u.toString();
-  }
-  function publicClubSlugFromLocation(){
-    const path=String(location.pathname||'').replace(/^\/+|\/+$/g,'').split('/').filter(Boolean);
-    const idx=path.findIndex(x=>['daftar','pendaftaran','register'].includes(String(x).toLowerCase()));
-    if(idx>=0&&path[idx+1])return decodeURIComponent(path[idx+1]);
-    const params=new URLSearchParams(location.search);
-    return params.get('club')||params.get('tenant')||'';
-  }
-  function setPublicRegistrationBrand(club){
-    const name=club?.name||'Klub Renang';
-    const logo=club?.logo_url||window.currentClubLogo?.()||window.SWIMORA_GENERIC_LOGO||'';
-    document.querySelectorAll('#publicRegisterView .public-register-head h2').forEach(x=>x.textContent='Pendaftaran Siswa Baru');
-    document.querySelectorAll('#publicRegisterView .public-register-head p').forEach(x=>x.textContent=name);
-    document.querySelectorAll('#publicRegisterView .public-register-head img').forEach(x=>{if(logo)x.src=logo;x.alt='Logo '+name});
-    document.title='Pendaftaran — '+name;
-  }
-  async function resolvePublicClub(){
-    const slug=publicClubSlugFromLocation();
-    if(!slug)return activeClub||null;
-    const client=window.getSupabaseClient?.();
-    if(!client)return null;
-    try{
-      let q=client.from('clubs').select('id,tenant_no,code,name,slug,logo_url,status,subscription_plan,subscription_status').eq('slug',slug).maybeSingle();
-      let res=await q;
-      if(res.error||!res.data){
-        const code=String(slug).replace(/-sc$/,'').replace(/-/g,'').toUpperCase();
-        res=await client.from('clubs').select('id,tenant_no,code,name,slug,logo_url,status,subscription_plan,subscription_status').eq('code',code).maybeSingle();
-      }
-      if(res.error||!res.data)return null;
-      activeClub=res.data;
-      if(typeof window.loadTenantConfiguration==='function'){
-        try{await window.loadTenantConfiguration(client,activeClub)}catch(e){console.warn('Public tenant config fallback:',e)}
-      }
-      setPublicRegistrationBrand(activeClub);
-      return activeClub;
-    }catch(e){console.warn('Gagal membaca tenant dari link pendaftaran:',e);return null}
-  }
-  window.swimoraRegistrationSlug=shortClubSlug;
-  window.swimoraSlugifyClubName=slugifyClubName;
-  const originalCreateTenantFromModal=window.createTenantFromModal;
-  if(originalCreateTenantFromModal){
-    window.createTenantFromModal=async function(){
-      const name=String(document.getElementById('saTenantName')?.value||'').trim();
-      const slugEl=document.getElementById('saTenantSlug');
-      if(slugEl&&!String(slugEl.value||'').trim()&&name)slugEl.value=slugifyClubName(name).replace(/-swimming-club$/,'-sc');
-      return originalCreateTenantFromModal.apply(this,arguments);
-    };
-  }
-  window.getPublicRegistrationLink=function(){
-    const club=activeClub||{name:'Trudgen Swimming Club',code:'TRUDGEN',slug:'trudgensc'};
-    return publicRegistrationLinkForClub(club);
-  };
-  window.copyPublicRegistrationLink=async function(){
-    const link=window.getPublicRegistrationLink();
-    try{
-      await navigator.clipboard.writeText(link);
-      toast('Link pendaftaran '+(activeClub?.name||'klub')+' berhasil disalin.');
-    }catch(e){
-      openModal('Link Pendaftaran Siswa','<div class="field"><label>Link pendaftaran sesuai nama klub</label><input value="'+esc(link)+'" readonly onclick="this.select()"></div><div class="hint">Kirim link ini melalui WhatsApp kepada calon pendaftar.</div>','','');
-    }
-  };
-  window.openPublicRegistration=async function(){
-    const club=await resolvePublicClub();
-    if(!club && publicClubSlugFromLocation()){
-      document.getElementById('loginView')?.classList.add('hidden');
-      document.getElementById('appView')?.classList.add('hidden');
-      document.getElementById('publicRegisterView')?.classList.remove('hidden');
-      const body=document.getElementById('publicRegisterBody');
-      if(body)body.innerHTML='<div class="public-success"><div class="success-icon">!</div><h2>Klub tidak ditemukan</h2><p>Link pendaftaran tidak mengenali klub ini. Silakan minta link terbaru dari admin klub.</p></div>';
-      return;
-    }
-    if(originalOpenPublicRegistration)originalOpenPublicRegistration.apply(this,arguments);
-    setPublicRegistrationBrand(club||activeClub);
-  };
-  window.submitPublicRegistration=async function(){
-    if(publicClubSlugFromLocation() && !activeClub)await resolvePublicClub();
-    return originalSubmitPublicRegistration.apply(this,arguments);
-  };
-  function prettyLinkForCurrentTenant(){
-    const club=activeClub;
-    return club ? publicRegistrationLinkForClub(club) : window.getPublicRegistrationLink();
-  }
-  window.getSwimoraPublicRegistrationLink=prettyLinkForCurrentTenant;
-
-  function initPrettyRegistrationRoute(){
-    const slug=publicClubSlugFromLocation();
-    const params=new URLSearchParams(location.search);
-    if(slug || params.get('register')==='1'){
-      setTimeout(async()=>{
-        try{await window.openPublicRegistration()}catch(e){console.warn('Public registration route:',e)}
-      },80);
-    }
-  }
-  window.addEventListener('load',initPrettyRegistrationRoute,{once:true});
-
-  const style=document.createElement('style');
-  style.textContent=`
-    .public-link-badge{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:#eef8fb;border:1px solid #d5eaf0;color:#126477;font-size:11px;font-weight:800}
-    .public-link-box{padding:12px 14px;border:1px solid #d5eaf0;border-radius:14px;background:#f7fbfc;margin-top:10px}
-    .public-link-box code{word-break:break-all;color:#0b6f82}
-  `;
-  document.head.appendChild(style);
 })();
 </script>
 </body>
