@@ -20261,44 +20261,32 @@ setTimeout(mountPlatformLogo,50);setTimeout(mountPlatformLogo,500);
   const originalLogin=window.login;
   window.login=async function(e){
     if(loginRole!=='admin')return originalLogin?.apply(this,arguments);
-    e.preventDefault();
     const identity=String(document.getElementById('adminUser')?.value||'').trim();
+    const looksLikeEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identity);
+    // IMPORTANT: Super Admin login must use the original, known-working login flow.
+    // Tenant-code resolution is only applied when the identity is NOT an email.
+    if(looksLikeEmail) return originalLogin?.apply(this,arguments);
+    e.preventDefault();
     const password=document.getElementById('adminPass')?.value||'';
-    const client=getSupabaseClient();
-    if(!client)return toastV('Koneksi Supabase aplikasi belum siap.','error');
-    if(!identity||!password)return toastV('Kode Tenant/Email dan password wajib diisi.','error');
+    if(!identity||!password)return toastV('Kode Tenant dan password wajib diisi.','error');
+    const input=document.getElementById('adminUser');
+    const originalValue=input?.value||'';
     const submitBtn=e.submitter||document.querySelector('#loginForm button[type="submit"]');
-    const oldText=submitBtn?.textContent;
-    if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='Memeriksa akses tenant...';}
     try{
-      let email=identity;
-      const looksLikeEmail=/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identity);
-      if(!looksLikeEmail)email=await resolveTenantLoginEmail(identity);
-      const {data,error}=await client.auth.signInWithPassword({email,password});
-      if(error)throw error;
-      if(!data?.user)throw new Error('Sesi login tidak terbentuk.');
-      platformUserEmail=data.user.email||email;
-      platformAdminSession=await getCurrentPlatformAdmin(client,data.user);
-      if(platformAdminSession){showSuperAdminView(platformUserEmail);toastV('Selamat datang di Dashboard Super Admin SWIMORA.');return;}
-      const memberships=await getUserClubMemberships(client,data.user);
-      if(!memberships.length)throw new Error('Akun berhasil login, tetapi belum terhubung ke tenant aktif.');
-      const chosen=memberships[0].club;
-      const typedCode=identity.toUpperCase();
-      if(!looksLikeEmail && String(chosen?.code||'').toUpperCase()!==typedCode)throw new Error('Akun tidak terhubung ke Kode Tenant tersebut.');
-      await loadTenantConfiguration(client,chosen);
-      currentRole='admin';cloudStateLoaded=false;
-      await loadStudentsFromSupabase(false);await loadClubStateFromSupabase(false);
-      enterApp('dashboard');updateTenantUI();
-      const st=document.getElementById('loginSupabaseStatus');
-      if(st)st.innerHTML='<b style="color:#138458">Login berhasil.</b> '+escV(tenantLabel(chosen));
-      toastV('Masuk ke '+tenantLabel(chosen)+'.');
-      setTimeout(()=>enforceFirstLoginPasswordChange(data.user),450);
+      const email=await resolveTenantLoginEmail(identity);
+      if(!input)throw new Error('Kolom login tenant tidak ditemukan.');
+      input.value=email;
+      // Delegate the actual authentication, role detection and tenant loading
+      // to the original login function so no Super Admin behavior is duplicated.
+      await originalLogin?.call(this,e);
     }catch(err){
       const detail=typeof explainNetworkFailure==='function'?explainNetworkFailure(err):(err?.message||String(err));
       const st=document.getElementById('loginSupabaseStatus');
       if(st)st.innerHTML='<b style="color:#c63b4d">Login gagal:</b> '+escV(detail);
       toastV('Login gagal: '+detail,'error');
-    }finally{if(submitBtn){submitBtn.disabled=false;submitBtn.textContent=oldText||'Masuk ke Sistem →';}}
+    }finally{
+      if(input)input.value=originalValue;
+    }
   };
 
   async function enforceFirstLoginPasswordChange(user){
