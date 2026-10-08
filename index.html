@@ -3875,6 +3875,144 @@ function printStudentCard(id){const s=student(id),logo=currentClubLogo();if(!s)r
 #loginSupabaseSetup,.supabase-login-settings,.connection-settings{display:none!important;}
 </style>
 </head><body><div class="card"><div class="head"><div class="brand"><img src="${logo}"><div><b>TRUDGEN<br>SWIMMING CLUB</b><span>OFFICIAL MEMBER CARD</span></div></div><div style="text-align:right;font-size:6px"><span style="opacity:.55">MEMBER ID</span><br><b>${s.id}</b></div></div><div class="body"><div><div class="name">${esc(s.name)}</div><div class="class-pill">${esc(s.class||'Siswa')}</div><div class="bio"><div class="bio-row"><span>Nama</span><b>${esc(s.name)}</b></div><div class="bio-row"><span>TTL</span><b>${esc(ttl)}</b></div><div class="bio-row"><span>Asal Sekolah</span><b>${esc(school)}</b></div></div></div><div class="qr"><div id="printMemberQR"></div><div class="code">${s.id}</div></div></div><div class="foot"><span>Scan QR untuk absensi</span><span>Trudgen SC • Kota Serang</span></div></div><script>window.onload=function(){new QRCode(document.getElementById('printMemberQR'),{text:${JSON.stringify(s.id)},width:84,height:84,colorDark:'#071a2d',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});setTimeout(function(){window.print()},250)}<\/script>
+
+<script>
+/* ============================================================
+   SWIMORA V17.5 — BRANDED PUBLIC REGISTRATION LINKS
+   Pretty URL: /daftar/<slug-klub>
+   Falls back to ?register=1&club=<slug> when needed.
+   ============================================================ */
+(function(){
+  'use strict';
+  const originalCopyPublicRegistrationLink=window.copyPublicRegistrationLink;
+  const originalOpenPublicRegistration=window.openPublicRegistration;
+  const originalSubmitPublicRegistration=window.submitPublicRegistration;
+
+  function slugifyClubName(name){
+    const s=String(name||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+      .replace(/&/g,' dan ').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+    return s || 'klub';
+  }
+  function shortClubSlug(club){
+    if(!club)return 'klub';
+    if(Number(club.tenant_no)===1 || String(club.code||'').toUpperCase()==='TRUDGEN')return 'trudgensc';
+    const explicit=String(club.slug||'').trim();
+    if(explicit)return slugifyClubName(explicit).replace(/-swimming-club$/,'-sc');
+    const code=String(club.code||'').trim();
+    if(code)return slugifyClubName(code);
+    const name=slugifyClubName(club.name||'klub');
+    return name.replace(/-swimming-club$/,'-sc');
+  }
+  function publicRegistrationPath(slug){return '/pendaftaran/'+encodeURIComponent(String(slug||'klub'))}
+  function publicRegistrationLinkForClub(club){
+    const base=location.origin && location.origin!=='null' ? location.origin : '';
+    const slug=shortClubSlug(club);
+    if(base)return base+publicRegistrationPath(slug);
+    const u=new URL(location.href);u.search='';u.hash='';u.pathname=publicRegistrationPath(slug);return u.toString();
+  }
+  function publicClubSlugFromLocation(){
+    const path=String(location.pathname||'').replace(/^\/+|\/+$/g,'').split('/').filter(Boolean);
+    const idx=path.findIndex(x=>['daftar','pendaftaran','register'].includes(String(x).toLowerCase()));
+    if(idx>=0&&path[idx+1])return decodeURIComponent(path[idx+1]);
+    const params=new URLSearchParams(location.search);
+    return params.get('club')||params.get('tenant')||'';
+  }
+  function setPublicRegistrationBrand(club){
+    const name=club?.name||'Klub Renang';
+    const logo=club?.logo_url||window.currentClubLogo?.()||window.SWIMORA_GENERIC_LOGO||'';
+    document.querySelectorAll('#publicRegisterView .public-register-head h2').forEach(x=>x.textContent='Pendaftaran Siswa Baru');
+    document.querySelectorAll('#publicRegisterView .public-register-head p').forEach(x=>x.textContent=name);
+    document.querySelectorAll('#publicRegisterView .public-register-head img').forEach(x=>{if(logo)x.src=logo;x.alt='Logo '+name});
+    document.title='Pendaftaran — '+name;
+  }
+  async function resolvePublicClub(){
+    const slug=publicClubSlugFromLocation();
+    if(!slug)return activeClub||null;
+    const client=window.getSupabaseClient?.();
+    if(!client)return null;
+    try{
+      let q=client.from('clubs').select('id,tenant_no,code,name,slug,logo_url,status,subscription_plan,subscription_status').eq('slug',slug).maybeSingle();
+      let res=await q;
+      if(res.error||!res.data){
+        const code=String(slug).replace(/-sc$/,'').replace(/-/g,'').toUpperCase();
+        res=await client.from('clubs').select('id,tenant_no,code,name,slug,logo_url,status,subscription_plan,subscription_status').eq('code',code).maybeSingle();
+      }
+      if(res.error||!res.data)return null;
+      activeClub=res.data;
+      if(typeof window.loadTenantConfiguration==='function'){
+        try{await window.loadTenantConfiguration(client,activeClub)}catch(e){console.warn('Public tenant config fallback:',e)}
+      }
+      setPublicRegistrationBrand(activeClub);
+      return activeClub;
+    }catch(e){console.warn('Gagal membaca tenant dari link pendaftaran:',e);return null}
+  }
+  window.swimoraRegistrationSlug=shortClubSlug;
+  window.swimoraSlugifyClubName=slugifyClubName;
+  const originalCreateTenantFromModal=window.createTenantFromModal;
+  if(originalCreateTenantFromModal){
+    window.createTenantFromModal=async function(){
+      const name=String(document.getElementById('saTenantName')?.value||'').trim();
+      const slugEl=document.getElementById('saTenantSlug');
+      if(slugEl&&!String(slugEl.value||'').trim()&&name)slugEl.value=slugifyClubName(name).replace(/-swimming-club$/,'-sc');
+      return originalCreateTenantFromModal.apply(this,arguments);
+    };
+  }
+  window.getPublicRegistrationLink=function(){
+    const club=activeClub||{name:'Trudgen Swimming Club',code:'TRUDGEN',slug:'trudgensc'};
+    return publicRegistrationLinkForClub(club);
+  };
+  window.copyPublicRegistrationLink=async function(){
+    const link=window.getPublicRegistrationLink();
+    try{
+      await navigator.clipboard.writeText(link);
+      toast('Link pendaftaran '+(activeClub?.name||'klub')+' berhasil disalin.');
+    }catch(e){
+      openModal('Link Pendaftaran Siswa','<div class="field"><label>Link pendaftaran sesuai nama klub</label><input value="'+esc(link)+'" readonly onclick="this.select()"></div><div class="hint">Kirim link ini melalui WhatsApp kepada calon pendaftar.</div>','','');
+    }
+  };
+  window.openPublicRegistration=async function(){
+    const club=await resolvePublicClub();
+    if(!club && publicClubSlugFromLocation()){
+      document.getElementById('loginView')?.classList.add('hidden');
+      document.getElementById('appView')?.classList.add('hidden');
+      document.getElementById('publicRegisterView')?.classList.remove('hidden');
+      const body=document.getElementById('publicRegisterBody');
+      if(body)body.innerHTML='<div class="public-success"><div class="success-icon">!</div><h2>Klub tidak ditemukan</h2><p>Link pendaftaran tidak mengenali klub ini. Silakan minta link terbaru dari admin klub.</p></div>';
+      return;
+    }
+    if(originalOpenPublicRegistration)originalOpenPublicRegistration.apply(this,arguments);
+    setPublicRegistrationBrand(club||activeClub);
+  };
+  window.submitPublicRegistration=async function(){
+    if(publicClubSlugFromLocation() && !activeClub)await resolvePublicClub();
+    return originalSubmitPublicRegistration.apply(this,arguments);
+  };
+  function prettyLinkForCurrentTenant(){
+    const club=activeClub;
+    return club ? publicRegistrationLinkForClub(club) : window.getPublicRegistrationLink();
+  }
+  window.getSwimoraPublicRegistrationLink=prettyLinkForCurrentTenant;
+
+  function initPrettyRegistrationRoute(){
+    const slug=publicClubSlugFromLocation();
+    const params=new URLSearchParams(location.search);
+    if(slug || params.get('register')==='1'){
+      setTimeout(async()=>{
+        try{await window.openPublicRegistration()}catch(e){console.warn('Public registration route:',e)}
+      },80);
+    }
+  }
+  window.addEventListener('load',initPrettyRegistrationRoute,{once:true});
+
+  const style=document.createElement('style');
+  style.textContent=`
+    .public-link-badge{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border-radius:999px;background:#eef8fb;border:1px solid #d5eaf0;color:#126477;font-size:11px;font-weight:800}
+    .public-link-box{padding:12px 14px;border:1px solid #d5eaf0;border-radius:14px;background:#f7fbfc;margin-top:10px}
+    .public-link-box code{word-break:break-all;color:#0b6f82}
+  `;
+  document.head.appendChild(style);
+})();
+</script>
 </body></html>`);w.document.close()}
 function stopScanner(){if(scannerStream){scannerStream.getTracks().forEach(t=>t.stop());scannerStream=null}}
 
