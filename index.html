@@ -19,7 +19,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#31887f" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2215%22%20fill%3D%22%234d775c%22%2F%3E%3Cpath%20d%3D%22M15%2024c8-7%2016%207%2034%200v8c-18%207-26-7-34%200zm0%2014c8-7%2016%207%2034%200v8c-18%207-26-7-34%200z%22%20fill%3D%22%23dfecc3%22%2F%3E%3C%2Fsvg%3E">
-  <title>SWIMORA V22 | Toska Army</title>
+  <title>SWIMORA V23 | Toska Army</title>
   <meta name="description" content="SWIMORA by Azzahidah Sport Management — platform manajemen klub olahraga. Workspace pertama: Trudgen Swimming Club." />
   
   
@@ -2675,6 +2675,58 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.62;transform:none!impo
 window.addEventListener('error',function(e){try{console.error('[SWIMORA V16.8]',e.error||e.message)}catch(_){}});
 window.addEventListener('unhandledrejection',function(e){try{console.error('[SWIMORA V16.8] Promise rejection',e.reason)}catch(_){}});
 </script>
+
+<style id="swimora-v23-mobile-registration-fix">
+/* Mobile registration: allow the complete form to scroll instead of clipping inside a fixed-height panel. */
+@media (max-width:680px){
+  html body.swimora-public,
+  html.swimora-public { overflow:hidden!important; }
+  html body #publicRegisterView.sw188-public {
+    position:fixed!important; inset:0!important; width:100vw!important;
+    height:100dvh!important; overflow:hidden!important;
+  }
+  html body #publicRegisterView .sw188-stage:has(.sw188-form-wrap){
+    height:100dvh!important; min-height:100dvh!important;
+    overflow-y:auto!important; overflow-x:hidden!important;
+    -webkit-overflow-scrolling:touch!important;
+  }
+  html body #publicRegisterView .sw188-stage:has(.sw188-form-wrap) .sw188-content{
+    height:auto!important; min-height:100dvh!important;
+    padding:0 12px 28px!important; box-sizing:border-box!important;
+  }
+  html body #publicRegisterView .sw188-form-wrap{
+    height:auto!important; min-height:100dvh!important;
+    padding:10px 0 28px!important; box-sizing:border-box!important;
+  }
+  html body #publicRegisterView .sw188-form-head{
+    align-items:flex-start!important; flex-wrap:wrap!important; gap:10px!important;
+  }
+  html body #publicRegisterView .sw188-form-head h2{font-size:clamp(21px,6vw,28px)!important;line-height:1.2!important}
+  html body #publicRegisterView .sw188-form-head .sw188-back{max-width:100%!important;white-space:normal!important}
+  html body #publicRegisterView .sw188-form-box{
+    flex:0 0 auto!important; min-height:0!important; max-height:none!important;
+    height:auto!important; overflow:visible!important; padding:12px!important;
+    border-radius:18px!important; box-sizing:border-box!important;
+  }
+  html body #publicRegisterView .sw188-fields{
+    display:grid!important; grid-template-columns:minmax(0,1fr)!important;
+    gap:10px!important; padding:11px!important;
+  }
+  html body #publicRegisterView .sw188-field,
+  html body #publicRegisterView .sw188-field.full{grid-column:1!important;min-width:0!important}
+  html body #publicRegisterView .sw188-field input,
+  html body #publicRegisterView .sw188-field select,
+  html body #publicRegisterView .sw188-field textarea{
+    width:100%!important; min-width:0!important; min-height:42px!important;
+    font-size:14px!important; box-sizing:border-box!important;
+  }
+  html body #publicRegisterView .sw188-field input[type=file]{font-size:12px!important;padding:8px!important}
+  html body #publicRegisterView .sw188-actions{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:12px!important}
+  html body #publicRegisterView .sw188-check{line-height:1.5!important}
+  html body #publicRegisterView .sw188-submit{width:100%!important;min-height:48px!important}
+}
+</style>
+
 </head>
 <body>
 <div id="toastWrap" class="toast-wrap" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -2707,7 +2759,7 @@ window.addEventListener('unhandledrejection',function(e){try{console.error('[SWI
   <div class="sw-login-right">
     <div class="sw-login-card">
       <div class="sw-card-brand"><div class="sw-card-mark">≈</div><div><strong>SWIMORA</strong><span>Azzahidah Sport Management</span></div></div>
-      <div class="sw-access-pill"><i></i> Super Admin / Tenant Access</div><div class="sw-elegant-version">V22 · Toska Army</div>
+      <div class="sw-access-pill"><i></i> Super Admin / Tenant Access</div><div class="sw-elegant-version">V23 · Toska Army</div>
       <h2>Masuk ke sistem</h2>
       <p class="sw-sub">Sistem akan mengenali apakah akun Anda Super Admin SWIMORA atau anggota tenant.</p>
       
@@ -8917,8 +8969,8 @@ function renderReportClassPanel(){const p=reportDescriptions[document.getElement
 const oldReports=window.renderReports;window.renderReports=function(){const r=oldReports?.apply(this,arguments);const f=document.getElementById('reportClassFilter')?.value;if(f){const tbody=document.getElementById('reportTable');if(tbody)tbody.querySelectorAll('tr').forEach(tr=>{const text=tr.textContent||'';const s=(db.students||[]).find(x=>text.includes(x.name));if(s&&s.class!==f)tr.remove()})}return r};setInterval(mountReportClass,700);
 const rptStyle=document.createElement('style');rptStyle.textContent='.report-class-panel{margin:0 0 16px;padding:16px 18px;border:1px solid #c9e5ea;border-radius:14px;background:linear-gradient(135deg,#f2fbfc,#fff);color:#20566a}.report-class-panel b{color:#087c82;font-size:16px}.report-class-panel p{margin:5px 0 10px;color:#5d7480;font-size:12px}.report-indicator-list{display:flex;flex-wrap:wrap;gap:6px}.report-indicator-list span{padding:6px 9px;border-radius:99px;background:#e2f6f4;color:#146878;font-size:11px;font-weight:700}';document.head.appendChild(rptStyle);
 /* Tenant: delete action with explicit confirmation; credential workflow remains from existing RPC */
-window.deleteTenant=function(id,name){if(!id)return;if(!confirm('Hapus tenant '+name+'? Data tenant yang terkait dapat ikut terhapus sesuai aturan database.'))return;const c=getSupabaseClient();if(!c)return toast('Koneksi Supabase belum tersedia.','error');c.from('clubs').delete().eq('id',id).then(({error})=>{if(error)return toast('Tenant tidak dapat dihapus: '+error.message,'error');toast('Tenant berhasil dihapus.');refreshSuperAdminDashboard()})};
-const oldRefresh=window.refreshSuperAdminDashboard;window.refreshSuperAdminDashboard=async function(){const r=await oldRefresh?.apply(this,arguments);setTimeout(()=>{document.querySelectorAll('#tenantGrid .tenant-card').forEach(card=>{if(card.querySelector('.delete-tenant-btn'))return;const no=card.querySelector('.tenant-no')?.textContent||'';const tenantNo=(no.match(/\d+/)||[])[0];const tenant=(window.superAdminTenants||[]).find(x=>String(x.tenant_no)===String(Number(tenantNo)));const b=document.createElement('button');b.className='btn btn-outline btn-sm delete-tenant-btn';b.textContent='Hapus Tenant';b.onclick=()=>deleteTenant(tenant?.id,tenant?.name||no);card.querySelector('.tenant-actions')?.appendChild(b)})},150);return r};
+window.deleteTenant=async function(id,name){if(!id)return false;if(!confirm('Hapus tenant '+name+'? Penghapusan hanya diizinkan jika tenant kosong sesuai aturan database.'))return false;const c=typeof getSupabaseClient==='function'?getSupabaseClient():null;if(!c){toast('Koneksi Supabase belum tersedia.','error');return false}try{const {data,error}=await c.rpc('swimora_delete_empty_tenant_v23',{p_club_id:id});if(error)throw error;if(data&&data.ok===false)throw new Error(data.message||'Penghapusan ditolak server.');toast('Tenant '+name+' berhasil dihapus.','success');await refreshSuperAdminDashboard();return true}catch(e){console.error('deleteTenant',e);toast('Tenant belum terhapus: '+(e?.message||e),'error');return false}};
+const oldRefresh=window.refreshSuperAdminDashboard;window.refreshSuperAdminDashboard=async function(){const r=await oldRefresh?.apply(this,arguments);setTimeout(()=>{document.querySelectorAll('#tenantGrid .tenant-card').forEach(card=>{if(card.querySelector('.delete-tenant-btn'))return;const no=card.querySelector('.tenant-no')?.textContent||'';const tenantNo=(no.match(/\d+/)||[])[0];const tenant=(superAdminTenants||[]).find(x=>String(x.tenant_no)===String(Number(tenantNo)));const b=document.createElement('button');b.className='btn btn-outline btn-sm delete-tenant-btn';b.textContent='Hapus Tenant';b.onclick=()=>deleteTenant(tenant?.id,tenant?.name||no);card.querySelector('.tenant-actions')?.appendChild(b)})},150);return r};
 })();
 </script>
 <script>
@@ -19944,11 +19996,11 @@ window.reportClassProfile=function(s){const c=String(s?.class||'').toLowerCase()
 // Tenant deletion: use the protected server-side RPC; never attempt unsafe client-side cascade deletes.
 window.deleteTenant=async function(clubId,clubName='tenant'){
  if(!clubId){if(typeof toast==='function')toast('ID tenant tidak ditemukan. Segarkan daftar tenant dan coba lagi.','error');return false}
- const tenant=(window.superAdminTenants||[]).find(x=>String(x.id)===String(clubId));
+ const tenant=(superAdminTenants||[]).find(x=>String(x.id)===String(clubId));
  if(Number(tenant?.tenant_no)===1){if(typeof toast==='function')toast('Tenant #001 dilindungi dan tidak dapat dihapus.','error');return false}
  const yes=window.confirm('Hapus tenant “'+clubName+'”? Tindakan ini permanen dan dapat menghapus data tenant terkait. Pastikan ekspor/backup sudah tersedia.');if(!yes)return false;
- try{const client=typeof getSupabaseClient==='function'?getSupabaseClient():null;if(!client)throw new Error('Koneksi Supabase belum tersedia.');const {data,error}=await client.rpc('delete_swimora_tenant',{p_club_id:clubId});if(error)throw error;if(data&&data.ok===false)throw new Error(data.message||'Penghapusan ditolak.');if(typeof refreshSuperAdminDashboard==='function')await refreshSuperAdminDashboard();if(typeof toast==='function')toast('Tenant '+clubName+' berhasil dihapus.','success');return true}
- catch(err){console.error('deleteTenant',err);if(typeof toast==='function')toast('Tenant belum terhapus: '+(err?.message||err)+'. Pastikan fungsi delete_swimora_tenant sudah dipasang di Supabase.','error');return false}
+ try{const client=typeof getSupabaseClient==='function'?getSupabaseClient():null;if(!client)throw new Error('Koneksi Supabase belum tersedia.');const {data,error}=await client.rpc('swimora_delete_empty_tenant_v23',{p_club_id:clubId});if(error)throw error;if(data&&data.ok===false)throw new Error(data.message||'Penghapusan ditolak.');if(typeof refreshSuperAdminDashboard==='function')await refreshSuperAdminDashboard();if(typeof toast==='function')toast('Tenant '+clubName+' berhasil dihapus.','success');return true}
+ catch(err){console.error('deleteTenant',err);if(typeof toast==='function')toast('Tenant belum terhapus: '+(err?.message||err)+'. Pastikan fungsi swimora_delete_empty_tenant_v23 tersedia dan ID tenant benar.','error');return false}
 };
 })();
 </script>
@@ -19979,7 +20031,7 @@ window.deleteTenant=async function(clubId,clubName='tenant'){
  if(!confirm('Hapus tenant “'+name+'”? Tindakan permanen. Pastikan data sudah diekspor/di-backup.'))return false;
  try{
   const client=typeof getSupabaseClient==='function'?getSupabaseClient():null;if(!client)throw new Error('Koneksi Supabase belum tersedia.');
-  const {data,error}=await client.rpc('delete_swimora_tenant',{p_club_id:tenant.id});if(error)throw error;
+  const {data,error}=await client.rpc('swimora_delete_empty_tenant_v23',{p_club_id:tenant.id});if(error)throw error;
   if(data&&data.ok===false)throw new Error(data.message||'Penghapusan ditolak server.');
   if(typeof refreshSuperAdminDashboard==='function')await refreshSuperAdminDashboard();
   if(typeof toast==='function')toast('Tenant '+name+' berhasil dihapus.','success');return true;
@@ -20024,7 +20076,7 @@ window.saveRegistration=function(){
  if(missing.length){if(typeof toast==='function')toast('Lengkapi data wajib: '+missing.map(x=>x[1]).join(', ')+'.','error');document.getElementById(missing[0][0])?.focus();return;}
  const cls=get('mRclass'),fee=typeof getDefaultFeeForClass==='function'?getDefaultFeeForClass(cls):0;
  const data={id:typeof uid==='function'?uid('REG'):'REG-'+Date.now(),name:get('mRname'),nickname:get('mRnickname'),gender:get('mRgender'),birthPlace:get('mRbirthPlace'),birth:get('mRbirth'),school:get('mRschool'),nisn:get('mRnisn'),address:get('mRaddress'),medicalHistory:get('mRmedical'),parent:get('mRparent'),phone:get('mRphone'),class:cls,date:typeof nowISO==='function'?nowISO():new Date().toISOString().slice(0,10),status:get('mRstatus')||'Baru',registrationFee:typeof REGISTRATION_FEE!=='undefined'?REGISTRATION_FEE:0,registrationFeePaid:false,registrationFeePaidOn:'',trainingFee:fee,trainingDays:window.__selectedAdminTrainingDays||[]};
- if(!window.db||!Array.isArray(db.registrations)){if(typeof toast==='function')toast('Database pendaftaran belum siap.','error');return;}
+ if(typeof db==='undefined'||!Array.isArray(db.registrations)){if(typeof toast==='function')toast('Database pendaftaran belum siap.','error');return;}
  db.registrations.push(data);if(typeof closeModal==='function')closeModal();if(typeof saveDB==='function')saveDB();if(typeof renderRegistrations==='function')renderRegistrations();if(typeof toast==='function')toast('Pendaftaran tersimpan. Data opsional dapat dilengkapi kemudian.');
 };
 
@@ -20076,7 +20128,7 @@ document.head.appendChild(css);
 /* SWIMORA V20 — tenant removal, optional registration, mobile form, focused PB sessions */
 function toastV20(msg,type){if(typeof toast==='function')toast(msg,type||'info');else console[type==='error'?'error':'log'](msg)}
 function tenantV20FromCard(card){
- const list=Array.isArray(window.superAdminTenants)?window.superAdminTenants:[];
+ const list=Array.isArray(superAdminTenants)?superAdminTenants:[];
  const keys=['tenantId','clubId','id'];
  for(const k of keys){const v=card?.dataset?.[k];if(v){const hit=list.find(x=>String(x.id)===String(v)||String(x.club_id||'')===String(v));if(hit)return hit}}
  const text=(card?.innerText||'');
@@ -20087,18 +20139,16 @@ function tenantV20FromCard(card){
  return no?list.find(x=>Number(x.tenant_no||x.tenant_number)===no):null;
 }
 window.deleteTenant=async function(id,name){
- let t=(window.superAdminTenants||[]).find(x=>String(x.id)===String(id));
+ let t=(superAdminTenants||[]).find(x=>String(x.id)===String(id));
  if(!t&&id&&typeof id==='object')t=id;
- if(!t&&name)t=(window.superAdminTenants||[]).find(x=>String(x.name||x.club_name||'').toLowerCase()===String(name).toLowerCase());
+ if(!t&&name)t=(superAdminTenants||[]).find(x=>String(x.name||x.club_name||'').toLowerCase()===String(name).toLowerCase());
  if(!t?.id){toastV20('ID tenant belum ditemukan. Klik Refresh lalu coba lagi.','error');return false}
  const label=t.name||t.club_name||name||'tenant';
  if(!confirm('Hapus tenant “'+label+'” secara permanen? Data terkait tenant dapat ikut terhapus.'))return false;
  const c=typeof getSupabaseClient==='function'?getSupabaseClient():null;
  if(!c){toastV20('Koneksi Supabase belum tersedia.','error');return false}
  try{
-  let r=await c.rpc('delete_swimora_tenant',{p_club_id:t.id});
-  /* Fallback untuk instalasi lama yang belum memiliki RPC. */
-  if(r.error && /function|rpc|does not exist|not found/i.test(String(r.error.message||r.error))){r=await c.from('clubs').delete().eq('id',t.id)}
+  let r=await c.rpc('swimora_delete_empty_tenant_v23',{p_club_id:t.id});
   if(r.error)throw r.error;
   if(r.data&&r.data.ok===false)throw new Error(r.data.message||'Penghapusan ditolak server.');
   if(typeof refreshSuperAdminDashboard==='function')await refreshSuperAdminDashboard();
@@ -20127,7 +20177,7 @@ if(oldSubmitPublic)window.submitPublicRegistration=async function(){optionalize(
 window.saveRegistration=function(){
  const v=id=>String(document.getElementById(id)?.value||'').trim();
  const cls=v('mRclass')||'Pemula A', data={id:typeof uid==='function'?uid('REG'):'REG-'+Date.now(),name:v('mRname'),nickname:v('mRnickname'),gender:v('mRgender'),birthPlace:v('mRbirthPlace'),birth:v('mRbirth'),school:v('mRschool'),nisn:v('mRnisn'),address:v('mRaddress'),medicalHistory:v('mRmedical'),parent:v('mRparent'),phone:v('mRphone'),trainingDays:window.__selectedAdminTrainingDays||[],class:cls,date:typeof nowISO==='function'?nowISO():new Date().toISOString().slice(0,10),status:v('mRstatus')||'Baru',registrationFee:typeof REGISTRATION_FEE!=='undefined'?REGISTRATION_FEE:0,registrationFeePaid:false,registrationFeePaidOn:'',trainingFee:typeof getDefaultFeeForClass==='function'?getDefaultFeeForClass(cls):0};
- if(!window.db||!Array.isArray(db.registrations)){toastV20('Database pendaftaran belum siap.','error');return}
+ if(typeof db==='undefined'||!Array.isArray(db.registrations)){toastV20('Database pendaftaran belum siap.','error');return}
  db.registrations.push(data);if(typeof closeModal==='function')closeModal();if(typeof saveDB==='function')saveDB();if(typeof renderRegistrations==='function')renderRegistrations();toastV20('Pendaftaran tersimpan. Data yang belum diisi dapat dilengkapi kemudian.','success')
 };
 /* Compact, clean mobile registration layout. */
@@ -20527,9 +20577,9 @@ window.printPBProgram=function(){const s=student(val('mPBstudent')),p=s&&pbProgr
 /* Public URLs use a real registration entry file for correct link-preview metadata. */
 window.getPublicRegistrationLink=function(){const u=new URL(location.href);if(u.protocol!=='file:')u.pathname='/pendaftaran/';u.searchParams.set('register','1');u.hash='';return u.toString()};
 window.copyPublicRegistrationLink=async function(){const link=getPublicRegistrationLink();try{await navigator.clipboard.writeText(link);toast('Link Pendaftaran Siswa Baru disalin. Kirim link ini kepada orang tua.')}catch(e){openModal('Pendaftaran Siswa Baru · Salin Link',`<div class="field"><label>Link pendaftaran</label><input readonly value="${E(link)}" onclick="this.select()"></div><p class="hint">Halaman pendaftaran menggunakan judul Pendaftaran Siswa Baru, bukan nomor versi aplikasi.</p>`,'','')}};
-function title(){const on=document.documentElement.classList.contains('sw188-public')||new URLSearchParams(location.search).get('register')==='1'||/\/pendaftaran\//.test(location.pathname);document.title=on?'Pendaftaran Siswa Baru | Klub Renang':'SWIMORA V22 | Toska Army';}
+function title(){const on=document.documentElement.classList.contains('sw188-public')||new URLSearchParams(location.search).get('register')==='1'||/\/pendaftaran\//.test(location.pathname);document.title=on?'Pendaftaran Siswa Baru | Klub Renang':'SWIMORA V23 | Toska Army';}
 const oldOpen=window.openPublicRegistration;if(oldOpen)window.openPublicRegistration=function(){const r=oldOpen.apply(this,arguments);title();return r};
-const oldClose=window.closePublicRegistration;if(oldClose)window.closePublicRegistration=function(){const r=oldClose.apply(this,arguments);document.title='SWIMORA V22 | Toska Army';return r};
+const oldClose=window.closePublicRegistration;if(oldClose)window.closePublicRegistration=function(){const r=oldClose.apply(this,arguments);document.title='SWIMORA V23 | Toska Army';return r};
 window.addEventListener('load',()=>setTimeout(title,100));
 })();
 
@@ -20569,5 +20619,149 @@ html body .program-toolbar .btn{white-space:normal!important}
 }
 
 </style>
+
+<style id="swimora-v23-registration-layout">
+/* V23: intrinsic-height program cards; prices are never placed below the card. */
+html body .sw188-grid{grid-auto-rows:auto!important;grid-template-rows:none!important;align-content:start!important;align-items:stretch!important;overflow:visible!important;flex:0 0 auto!important;padding:2px 0 22px!important}
+html body .sw188-pkg{display:grid!important;grid-template-columns:48px minmax(0,1fr)!important;grid-template-rows:auto auto auto auto!important;height:auto!important;min-height:210px!important;gap:8px 14px!important;padding:20px!important;text-align:left!important;background:#fff!important;overflow:visible!important;align-content:start!important}
+html body .sw188-pkg .sw188-no{grid-column:1!important;grid-row:1 / 3!important;align-self:start!important}
+html body .sw188-pkg h3{grid-column:2!important;grid-row:1!important;margin:0!important;align-self:center!important;min-width:0!important;font-size:21px!important;line-height:1.25!important}
+html body .sw188-pkg .freq{grid-column:2!important;grid-row:2!important;align-self:start!important;min-width:0!important;font-size:12px!important;line-height:1.5!important}
+html body .sw188-pkg p{grid-column:1 / -1!important;grid-row:3!important;font-size:12px!important;line-height:1.6!important;min-width:0!important;margin:8px 0 0!important}
+html body .sw188-price{grid-column:1 / -1!important;grid-row:4!important;display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;border-top:1px solid #d6e1d4!important;padding:12px 0 0!important;margin-top:4px!important;align-self:end!important;position:static!important;min-width:0!important}
+html body .sw188-price b{display:block!important;font-size:22px!important;line-height:1.3!important;color:#226b60!important;overflow-wrap:anywhere!important}
+html body .sw188-price span{display:block!important;padding:7px 10px!important;background:#e2ecda!important;border-radius:8px!important;color:#416743!important;white-space:nowrap!important;font-size:10px!important}
+html body .sw188-pack-wrap{height:auto!important;min-height:100%!important;padding-bottom:28px!important}
+html body .sw188-stage:has(.sw188-pack-wrap){overflow-y:auto!important;overflow-x:hidden!important}
+html body .sw188-stage:has(.sw188-pack-wrap) .sw188-content{height:auto!important;min-height:100%!important;padding-bottom:18px!important}
+html body .sw23-registration-message{margin:0 0 16px;padding:12px;border:1px solid #a7cbb0;background:#e0efe1;color:#315e41;border-radius:12px;font-size:13px;line-height:1.6}
+html body .sw23-registration-message.is-error{background:#fff1ee;color:#962e39;border-color:#dba9ab}
+html body .sw23-optional-note{font-size:12px;color:#546e63;line-height:1.6;margin:10px 0}
+html body .sw23-success{margin:clamp(20px,6vh,70px) auto;padding:26px;max-width:560px;width:calc(100% - 28px);border-radius:24px;background:#f4f8ed;color:#244b46;line-height:1.7;box-shadow:0 20px 40px rgba(27,73,50,.18);overflow-wrap:anywhere}
+html body .sw23-success h2{font-size:23px;color:#244b46!important}
+html body .sw23-success-mark{display:grid;place-items:center;width:50px;height:50px;border-radius:50%;background:#daecd3;color:#3e754d;font-size:24px;font-weight:800}
+html body .sw23-warning{padding:10px 14px;margin:12px 0;background:#f7f0d5;border:1px solid #d4c484;border-radius:10px;color:#70581e;font-size:12px}
+html body .sw23-warning p{margin:5px 0}
+html body .sw23-tenant-status{grid-column:1 / -1!important}
+@media(max-width:680px){
+ html body .sw188-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:14px!important;min-height:0!important}
+ html body .sw188-pkg{width:100%!important;min-height:212px!important;grid-template-columns:44px minmax(0,1fr)!important;padding:18px!important;border-radius:22px!important}
+ html body .sw188-pkg .sw188-no{width:44px!important;height:44px!important;border-radius:13px!important}
+ html body .sw188-content{max-width:100%!important;box-sizing:border-box!important}
+ html body .sw188-section-head{gap:12px!important;align-items:start!important;margin:14px 0 18px!important}
+ html body .sw188-section-head h2{font-size:25px!important;line-height:1.25!important}
+ html body .sw188-section-head .sw188-back{flex:0 0 auto!important;max-width:100px!important;white-space:normal!important;font-size:11px!important;padding:10px!important}
+ html body .sw188-top{min-height:74px!important;height:auto!important;padding:10px 0!important;gap:10px!important}
+ html body .sw188-brand{min-width:0!important;gap:10px!important}
+ html body .sw188-brand b{font-size:16px!important;line-height:1.3!important}
+ html body .sw188-brand span{font-size:8px!important;letter-spacing:.8px!important}
+ html body .sw188-form-box{padding:16px!important}
+}
+
+</style>
+<script id="swimora-v23-registration-tenant">
+/* SWIMORA V23: targeted registration and tenant fixes, no auth override. */
+(function(){
+'use strict';
+const esc23=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const canonical=name=>{const n=String(name||'').toLowerCase().replace(/\s+/g,' ').trim();if(/^(kelas |pemula |kelas pemula )?a$/.test(n))return 'pemula a';if(/^(kelas |pemula |kelas pemula )?b$/.test(n))return 'pemula b';return n};
+const missingRPC=e=>['PGRST202','42883'].includes(String(e?.code||''))||/could not find the function|function .* does not exist/i.test(String(e?.message||''));
+const DBhelp='Periksa izin database di Supabase. File perbaikan SQL V23 tersedia dalam paket; jangan menonaktifkan RLS.';
+let pendingRegistration=null,registrationBusy=false,registrationCompleted=false,tenantBusy=new Set();
+function errorMessage(e){let m=String(e?.message||e||'Kesalahan tidak dikenal.');if(/row.level security|permission denied|not authorized|42501/i.test(m+' '+e?.code))m+=' '+DBhelp;if(/foreign key|23503/i.test(m+' '+e?.code))m+=' Ada data terkait. Gunakan Nonaktifkan atau pasang fungsi hapus tenant kosong dari SQL V23.';return m}
+function message(text,success){const host=document.querySelector('.sw188-form-box')||document.getElementById('publicRegisterBody');if(!host){toast(text,success?'success':'error');return;}let el=host.querySelector('.sw23-registration-message');if(!el){el=document.createElement('div');el.className='sw23-registration-message';el.setAttribute('role','status');host.prepend(el)}el.textContent=text;el.classList.toggle('is-error',!success);el.scrollIntoView({block:'nearest',behavior:'smooth'});toast(text,success?'success':'error')}
+function optionalForm(){document.querySelectorAll('#publicRegisterView [id^="pR"]').forEach(e=>{e.required=false;e.removeAttribute('required')});document.querySelectorAll('.sw188-field label').forEach(l=>{[...l.childNodes].filter(n=>n.nodeType===3).forEach(n=>{n.textContent=n.textContent.replace(/\s*\*\s*/g,' ')})})}
+const oldForm=window.sw188Form;
+window.sw188Form=function(id){pendingRegistration=null;registrationCompleted=false;const r=oldForm?.apply(this,arguments);optionalForm();const box=document.querySelector('.sw188-actions');if(box&&!document.querySelector('.sw23-optional-note')){const note=document.createElement('p');note.className='sw23-optional-note';note.textContent='Biodata dan lampiran boleh dikosongkan untuk dilengkapi admin kemudian. Pilihan kelas menentukan tujuan pendaftaran.';box.before(note)}const fields=document.getElementById('pRclass')?.closest('.sw188-fields');if(fields){const wrap=document.createElement('div');wrap.className='sw188-field full';const days=['A','B'].includes(id)?['Senin','Rabu','Sabtu','Minggu']:['Senin','Rabu','Jumat','Sabtu','Minggu'];wrap.innerHTML='<label>Hari latihan (opsional)</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">'+days.map(d=>'<label style="display:flex;gap:7px;align-items:center"><input type="checkbox" name="pRclassDays" value="'+d+'" style="width:18px;min-height:18px">'+d+'</label>').join('')+'</div>';fields.append(wrap)}return r};
+const oldRegistrationLink=window.getPublicRegistrationLink;
+window.getPublicRegistrationLink=function(){const u=new URL(oldRegistrationLink());if(activeClub?.id){['club','club_id','tenant','slug'].forEach(k=>u.searchParams.delete(k));if(activeClub.slug)u.searchParams.set('club',activeClub.slug);else u.searchParams.set('club_id',activeClub.id)}return u.toString()};
+async function publicClub(client){const params=new URLSearchParams(location.search),slug=params.get('club')||params.get('tenant')||params.get('slug'),requested=params.get('club_id');let q=client.from('clubs').select('id,name,code,slug,status');if(requested)q=q.eq('id',requested);else if(slug)q=q.eq('slug',slug);else if(activeClub?.id)q=q.eq('id',activeClub.id);else q=q.eq('code','TRUDGEN');const {data,error}=await q.maybeSingle();if(error)throw error;if(!data?.id)throw new Error('Klub tujuan belum ditemukan. Minta link pendaftaran dari admin klub.');if(data.status!=='active')throw new Error('Klub tujuan sedang nonaktif; pendaftaran belum dapat dikirim.');return data}
+async function fileData(id,maxBytes){const f=document.getElementById(id)?.files?.[0];if(!f)return null;if(f.size>maxBytes)throw new Error((id==='pRphoto'?'Pas foto':'Bukti transfer')+' terlalu besar. Maksimal '+Math.round(maxBytes/1024/1024)+' MB.');const allowed=id==='pRphoto'?['image/jpeg','image/png','image/webp']:['image/jpeg','image/png','image/webp','application/pdf'];if(!allowed.includes(f.type))throw new Error('Format lampiran tidak didukung. Gunakan JPG/PNG/WebP'+(id==='pRproof'?' atau PDF.':'.'));const dataUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(f)});return {name:f.name,type:f.type,dataUrl}}
+function removeUnsupported(error,payload){const m=String(error?.message||'');const hit=m.match(/Could not find the '([^']+)' column/i)||m.match(/column [\w.]*["']?([a-z_]+)["']? does not exist/i);const key=hit?.[1];if(!['training_fee','training_days','registration_details'].includes(key)||!(key in payload))return null;delete payload[key];return key}
+window.submitPublicRegistration=async function(){
+ if(registrationBusy||registrationCompleted)return false;optionalForm();
+ const get=id=>String(document.getElementById(id)?.value||'').trim();
+ if(!document.getElementById('pRagree')?.checked){message('Centang pernyataan data terlebih dahulu.',false);return false}
+ const fee=Number(get('pRfee')||0);if(!Number.isFinite(fee)||fee<0){message('Nominal pembayaran harus angka nol atau lebih.',false);return false}
+ const client=getSupabaseClient();if(!client){message('Koneksi Supabase belum siap. Hubungi admin klub.',false);return false}
+ registrationBusy=true;const btn=document.querySelector('.sw188-submit,.public-register-actions .btn-primary');const old=btn?.textContent;if(btn){btn.disabled=true;btn.textContent='Menyimpan ke Data Siswa...'}
+ try{
+  if(!pendingRegistration){
+   const club=await publicClub(client);const result=await client.from('classes').select('id,name,club_id,active').eq('club_id',club.id).eq('active',true);if(result.error)throw result.error;
+   const cls=(result.data||[]).find(c=>canonical(c.name)===canonical(get('pRclass')));if(!cls)throw new Error('Program “'+get('pRclass')+'” belum mempunyai kelas aktif di database klub. Admin perlu membuat kelas tersebut; jangan dipetakan ke kelas lain.');
+   const today=nowISO(),code='REG-'+(globalThis.crypto?.randomUUID?.().replace(/-/g,'').slice(0,16)||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8)).toUpperCase();
+   const kind=canonical(cls.name),pkg=kind==='pemula a'?4:kind==='pemula b'?8:kind==='intermediate'?12:kind==='prestasi'?16:4;
+   const days=[...document.querySelectorAll('input[name="pRclassDays"]:checked')].map(x=>x.value);
+   const details={nickname:get('pRnickname'),nisn:get('pRNisn')||get('pRnisn'),address:get('pRaddress'),medicalHistory:get('pRmedical'),parentJob:get('pRparentJob'),parentAddress:get('pRparentAddress'),program:get('pRclass'),submittedAt:new Date().toISOString(),photo:await fileData('pRphoto',1024*1024),proof:await fileData('pRproof',2*1024*1024)};
+   const payload={club_id:club.id,member_code:code,full_name:get('pRname')||'Calon Siswa '+code.slice(-6),gender:get('pRgender')||null,birth_place:get('pRbirthPlace')||null,birth_date:get('pRbirth')||null,school_name:get('pRschool')||null,class_id:cls.id,parent_name:get('pRparent')||null,parent_phone:get('pRphone')||'',package_sessions:pkg,remaining_sessions:pkg,billing_mode:['pemula a','pemula b'].includes(kind)?'session':'monthly',billing_cycle_sessions:pkg,join_date:today,status:'Aktif',training_fee:fee,training_days:days,registration_details:details,updated_at:new Date().toISOString()};
+   // Registration does not attest payment: no last_payment_date is fabricated.
+   pendingRegistration={payload,club,cls,omitted:[],hasDays:days.length>0};
+  }
+  let result;
+  for(let attempt=0;attempt<4;attempt++){
+   result=await client.from('students').insert(pendingRegistration.payload);
+   if(!result.error)break;
+   const removed=removeUnsupported(result.error,pendingRegistration.payload);
+   if(removed){pendingRegistration.omitted.push(removed);continue;}
+   if(String(result.error.code)==='23505'&&/member_code/i.test(String(result.error.message)+' '+String(result.error.details))){message('Kode pendaftaran ini sudah ada di server. Jangan kirim ulang; berikan kode '+pendingRegistration.payload.member_code+' kepada admin untuk verifikasi.',false);return false;}
+   throw result.error;
+  }
+  if(result?.error)throw result.error;
+  // Never SELECT students from an anonymous registration page. A successful insert is the server acknowledgement.
+  const saved=pendingRegistration;registrationCompleted=true;
+  if(currentRole==='admin'&&activeClub?.id===saved.club.id){try{await loadStudentsFromSupabase(false);renderAll()}catch(e){console.warn('Refresh Data Siswa tertunda',e)}}
+  const warnings=[];
+  if(saved.omitted.includes('training_fee'))warnings.push('Nominal belum tersimpan: kolom training_fee belum tersedia.');
+  if(saved.omitted.includes('training_days')&&saved.hasDays)warnings.push('Hari latihan belum tersimpan: kolom training_days belum tersedia.');
+  if(saved.omitted.includes('registration_details'))warnings.push('Biodata tambahan dan lampiran belum tersimpan karena kolom registration_details belum tersedia. Admin perlu menjalankan SQL V23 lalu melengkapinya.');
+  const root=document.querySelector('.sw188-stage')||document.getElementById('publicRegisterBody');
+  root.innerHTML=`<div class="sw23-success"><div class="sw23-success-mark">✓</div><h2>Pendaftaran tersimpan di Data Siswa</h2><p><b>${esc23(saved.payload.full_name)}</b><br>${esc23(saved.club.name)} · ${esc23(saved.cls.name)}</p><p>Kode pendaftaran: <strong>${esc23(saved.payload.member_code)}</strong></p><p>Admin dapat melihat data melalui menu <b>Data Siswa</b> pada klub yang sama. Pendaftaran ini belum menandai pembayaran sebagai lunas.</p>${warnings.length?`<div class="sw23-warning">${warnings.map(w=>`<p>${esc23(w)}</p>`).join('')}</div>`:''}<button type="button" class="sw188-btn" onclick="closePublicRegistration()">Selesai</button></div>`;
+  try{localStorage.setItem('swimora-student-refresh',JSON.stringify({clubId:saved.club.id,time:Date.now()}))}catch(e){}
+  return true;
+ }catch(e){console.error('Pendaftaran V23',e);if(e?.code&&String(e.code)!=='23505')pendingRegistration=null;message('Pendaftaran belum tersimpan: '+errorMessage(e),false);return false}
+ finally{registrationBusy=false;if(btn&&btn.isConnected){btn.disabled=false;btn.textContent=old||'Kirim Pendaftaran'}}
+};
+window.sw188Submit=window.submitPublicRegistration;
+const oldMap=window.cloudRowToStudent;
+window.cloudRowToStudent=function(row){const data=oldMap(row),d=row.registration_details||{};return {...data,nickname:d.nickname||data.nickname||'',nisn:d.nisn||'',address:d.address||'',medicalHistory:d.medicalHistory||'',parentJob:d.parentJob||'',parentAddress:d.parentAddress||'',photo:d.photo?.dataUrl||'',registrationDetails:d,trainingDays:row.training_days||[],...(row.training_fee!=null?{trainingFee:Number(row.training_fee)}:{})}};
+/* Preserve the lexical tenant list. Do not look for let superAdminTenants on window. */
+function tenantList(){return Array.isArray(superAdminTenants)?superAdminTenants:[]}
+function tenantForCard(card){const id=card.dataset.clubId||card.dataset.tenantId;let t=id&&tenantList().find(x=>String(x.id)===id);if(t)return t;const name=card.querySelector('.tenant-brand-copy h3,h3')?.textContent.trim();const no=Number(card.querySelector('.tenant-no')?.textContent.match(/\d+/)?.[0]||0);return tenantList().find(x=>(name&&x.name===name)||(no&&Number(x.tenant_no)===no))}
+function wireTenants(){document.querySelectorAll('#tenantGrid .tenant-card').forEach(card=>{const t=tenantForCard(card);if(!t)return;card.dataset.clubId=t.id;const host=card.querySelector('.tenant-actions')||card;card.querySelectorAll('.delete-tenant-btn').forEach(b=>b.remove());const del=document.createElement('button');del.className='btn btn-outline btn-sm delete-tenant-btn';del.type='button';del.textContent='Hapus Tenant';del.disabled=tenantBusy.has(t.id);del.onclick=()=>window.deleteTenant(t.id,t.name);host.append(del);let status=card.querySelector('.sw23-tenant-status');if(!status){status=document.createElement('button');status.className='btn btn-outline btn-sm sw23-tenant-status';status.type='button';host.append(status)}status.textContent=t.status==='active'?'Nonaktifkan':'Aktifkan';status.disabled=tenantBusy.has(t.id);status.onclick=()=>window.sw23ToggleTenant(t.id);})}
+// Old patches may schedule their own handlers. The observer always repairs those handlers against the same lexical list.
+window.addEventListener('load',()=>{const grid=document.getElementById('tenantGrid');if(grid){new MutationObserver(()=>queueMicrotask(wireIfNeeded)).observe(grid,{childList:true,subtree:true});wireTenants()}});
+function wireIfNeeded(){document.querySelectorAll('#tenantGrid .tenant-card').forEach(card=>{const t=tenantForCard(card);if(!t)return;card.dataset.clubId=t.id;const b=card.querySelector('.delete-tenant-btn');if(b)b.onclick=()=>window.deleteTenant(t.id,t.name)});if([...document.querySelectorAll('#tenantGrid .tenant-card')].some(c=>!c.querySelector('.sw23-tenant-status')))wireTenants()}
+const previousRefresh=window.refreshSuperAdminDashboard;
+window.refreshSuperAdminDashboard=async function(){const r=await previousRefresh?.apply(this,arguments);wireTenants();[220,400].forEach(ms=>setTimeout(wireIfNeeded,ms));return r};
+window.deleteTenant=async function(id){
+ const t=tenantList().find(x=>String(x.id)===String(id));if(!t){toast('ID tenant belum terbaca. Muat ulang daftar tenant.','error');return false}
+ if(tenantBusy.has(t.id))return false;
+ if(!platformAdminSession){toast('Hanya Super Admin yang dapat menghapus tenant.','error');return false}
+ const card=document.querySelector(`[data-club-id="${CSS.escape(t.id)}"]`);const studentCount=Number(card?.querySelector('.tenant-stat b')?.textContent||0);
+ if(studentCount>0){toast('Tenant memiliki siswa. Gunakan Nonaktifkan; penghapusan permanen membutuhkan penanganan dan backup data terlebih dahulu.','error');return false}
+ if(!confirm('Hapus permanen tenant “'+t.name+'”?\n\nPenghapusan hanya untuk tenant tanpa siswa. Keanggotaan user dan konfigurasi kelas/paket tenant ini ikut dihapus; akun login Supabase tidak dihapus. Jika masih ada data operasional, server akan menolak.'))return false;
+ const client=getSupabaseClient();if(!client){toast('Koneksi Supabase belum tersedia.','error');return false}
+ tenantBusy.add(t.id);wireTenants();
+ try{
+  const existing=await client.from('students').select('id',{count:'exact',head:true}).eq('club_id',t.id);if(existing.error)throw existing.error;if(existing.count==null)throw new Error('Jumlah siswa tidak dapat diverifikasi. Penghapusan dibatalkan.');if(existing.count>0)throw new Error('Tenant memiliki '+existing.count+' siswa. Gunakan Nonaktifkan.');
+  let r=await client.rpc('swimora_delete_empty_tenant_v23',{p_club_id:t.id});
+  if(r.error&&missingRPC(r.error))throw new Error('Fungsi penghapusan V23 tidak ditemukan di Supabase. Pastikan SQL V23 sudah dijalankan; penghapusan langsung dibatalkan demi keamanan data.');
+  if(r.error)throw r.error;if(r.data?.ok===false)throw new Error(r.data.message||'Server menolak penghapusan.');
+  const check=await client.from('clubs').select('id').eq('id',t.id).maybeSingle();if(check.error)throw check.error;if(check.data)throw new Error('Tenant masih ada di server. Penghapusan belum berhasil.');
+  await refreshSuperAdminDashboard();toast('Tenant '+t.name+' benar-benar terhapus dari server.','success');return true;
+ }catch(e){console.error('Hapus tenant V23',e);toast('Tenant belum terhapus: '+errorMessage(e),'error');return false}
+ finally{tenantBusy.delete(t.id);wireTenants()}
+};
+window.sw23ToggleTenant=async function(id){const t=tenantList().find(x=>String(x.id)===String(id));if(!t||tenantBusy.has(id)||!platformAdminSession)return false;const next=t.status==='active'?'inactive':'active';if(next==='inactive'&&!confirm('Nonaktifkan tenant “'+t.name+'”? Data tetap tersimpan, tetapi login baru dan pendaftaran tenant akan ditolak.'))return false;const c=getSupabaseClient();if(!c)return false;tenantBusy.add(id);wireTenants();try{const r=await c.from('clubs').update({status:next}).eq('id',id).select('id,status');if(r.error)throw r.error;if(!r.data?.some(x=>x.id===id&&x.status===next))throw new Error('Status tenant tidak berubah di server. Periksa izin UPDATE Super Admin.');await refreshSuperAdminDashboard();toast('Tenant '+t.name+(next==='active'?' aktif kembali.':' dinonaktifkan.'),'success');return true}catch(e){toast('Status belum berubah: '+errorMessage(e),'error');return false}finally{tenantBusy.delete(id);wireTenants()}};
+/* Pull real rows into Data Siswa for administrators after a remote registration. No public student SELECT. */
+let refreshBusy=false;
+window.sw23RefreshStudents=async function(silent){if(refreshBusy||currentRole!=='admin'||!activeClub?.id)return false;refreshBusy=true;try{await loadStudentsFromSupabase(false);renderStudents();if(typeof renderDashboard==='function')renderDashboard();if(!silent)toast('Data Siswa diperbarui dari server.','success');return true}catch(e){if(!silent)toast('Data Siswa belum dapat disinkronkan: '+errorMessage(e),'error');return false}finally{refreshBusy=false}};
+const oldNavigate=window.navigate;
+window.navigate=function(view){const r=oldNavigate.apply(this,arguments);if(view==='students')sw23RefreshStudents(true);return r};
+window.addEventListener('focus',()=>sw23RefreshStudents(true));window.addEventListener('storage',e=>{if(e.key==='swimora-student-refresh')sw23RefreshStudents(true)});setInterval(()=>{if(document.visibilityState==='visible'&&document.getElementById('view-students')?.classList.contains('active'))sw23RefreshStudents(true)},30000);
+window.addEventListener('load',()=>{const bar=document.querySelector('#view-students .section-toolbar .right');if(bar&&!bar.querySelector('.sw23-sync-students')){const b=document.createElement('button');b.className='btn btn-outline sw23-sync-students';b.type='button';b.textContent='Sinkron Data Siswa';b.onclick=()=>sw23RefreshStudents(false);bar.prepend(b)}});
+})();
+
+</script>
 </body>
 </html>
