@@ -19958,7 +19958,7 @@ window.deleteTenant=async function(clubId,clubName='tenant'){
 (function(){
 'use strict';
 function findTenantForCard(card){
- const list=Array.isArray(window.superAdminTenants)?window.superAdminTenants:[];
+ const list=Array.isArray(superAdminTenants)?superAdminTenants:[];
  const direct=card?.dataset?.tenantId||card?.dataset?.clubId||card?.getAttribute('data-tenant-id')||card?.getAttribute('data-club-id');
  if(direct){const hit=list.find(x=>String(x.id)===String(direct)||String(x.club_id||'')===String(direct));if(hit)return hit;}
  const slugText=(card?.querySelector('.tenant-slug,.tenant-code,.tenant-meta,.tenant-subtitle')?.textContent||'').trim();
@@ -19970,9 +19970,9 @@ function findTenantForCard(card){
  return no?(list.find(x=>Number(x.tenant_no||x.tenant_number)===no)||null):null;
 }
 window.deleteTenant=async function(clubId,clubName='tenant'){
- let tenant=(window.superAdminTenants||[]).find(x=>String(x.id)===String(clubId));
+ let tenant=(superAdminTenants||[]).find(x=>String(x.id)===String(clubId));
  if(!tenant&&clubId&&typeof clubId==='object')tenant=clubId;
- if(!tenant&&clubName)tenant=(window.superAdminTenants||[]).find(x=>String(x.name||x.club_name||'').trim().toLowerCase()===String(clubName).trim().toLowerCase());
+ if(!tenant&&clubName)tenant=(superAdminTenants||[]).find(x=>String(x.name||x.club_name||'').trim().toLowerCase()===String(clubName).trim().toLowerCase());
  if(!tenant||!tenant.id){if(typeof toast==='function')toast('ID tenant belum berhasil dipetakan. Muat ulang daftar tenant lalu coba lagi.','error');return false;}
  if(Number(tenant.tenant_no||tenant.tenant_number)===1){if(typeof toast==='function')toast('Tenant #001 dilindungi dan tidak dapat dihapus.','error');return false;}
  const name=tenant.name||tenant.club_name||clubName||'tenant';
@@ -19991,7 +19991,7 @@ if(typeof oldRefresh==='function')window.refreshSuperAdminDashboard=async functi
  setTimeout(()=>document.querySelectorAll('#tenantGrid .tenant-card').forEach(card=>{
   const actions=card.querySelector('.tenant-actions')||card;let btn=card.querySelector('.delete-tenant-btn');
   if(!btn){btn=document.createElement('button');btn.type='button';btn.className='btn btn-outline btn-sm delete-tenant-btn';btn.textContent='Hapus Tenant';actions.appendChild(btn);}
-  btn.onclick=()=>{const tenant=findTenantForCard(card);if(!tenant){if(typeof toast==='function')toast('Data tenant belum sinkron. Klik Refresh lalu coba lagi.','error');return;}window.deleteTenant(tenant.id,tenant.name||tenant.club_name||'tenant');};
+  btn.onclick=async()=>{let tenant=findTenantForCard(card);if(!tenant&&typeof refreshSuperAdminDashboard==='function'){try{await refreshSuperAdminDashboard();}catch(_e){}tenant=findTenantForCard(card);}if(!tenant){if(typeof toast==='function')toast('ID tenant belum ditemukan pada data terbaru. Periksa koneksi Supabase lalu klik Refresh.','error');return;}window.deleteTenant(tenant.id,tenant.name||tenant.club_name||'tenant');};
  }),180);
  return result;
 };
@@ -20060,5 +20060,14 @@ document.head.appendChild(css);
 })();
 </script>
 
+<!-- SWIMORA COPYRIGHT FOOTER 2026 -->
+
+<style id="swimora-copyright-style">
+.swimora-copyright-footer{box-sizing:border-box;width:100%;padding:16px 20px;margin:24px 0 0;text-align:center;font:500 12px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;color:#647b89;border-top:1px solid rgba(100,140,155,.22);background:rgba(245,250,251,.82)}
+.swimora-copyright-footer strong{color:#173b50;font-weight:700}
+@media(max-width:640px){.swimora-copyright-footer{padding:14px 12px;font-size:11px}}
+</style>
+<footer class="swimora-copyright-footer" aria-label="Hak cipta SWIMORA">© 2026 <strong>Bambang Setya Jatmika, M.Pd.</strong> · SWIMORA. Seluruh hak cipta dilindungi.
+</footer>
 </body>
 </html>
