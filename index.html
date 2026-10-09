@@ -3448,9 +3448,9 @@ function openPublicRegistration(){document.getElementById('loginView').classList
 function closePublicRegistration(){document.getElementById('publicRegisterView').classList.add('hidden');if(currentRole){document.getElementById('appView').classList.remove('hidden');navigate(currentRole==='parent'?'parent':'dashboard')}else document.getElementById('loginView').classList.remove('hidden')}
 async function submitPublicRegistration(){
   const name=val('pRname'),gender=val('pRgender'),school=val('pRschool'),birthPlace=val('pRbirthPlace'),birth=val('pRbirth'),parent=val('pRparent'),phone=val('pRphone'),cls=val('pRclass')||'Pemula A',trainingFee=Number(val('pRfee')||0);
-  if(!name||!birthPlace||!birth||!parent||!phone||!trainingFee)return toast('Nama anak, tempat lahir, tanggal lahir, orang tua, nomor HP, dan nominal pembayaran wajib diisi.','error');
   if(trainingFee<0)return toast('Nominal pembayaran tidak boleh negatif.','error');
-  if(!document.getElementById('pRagree')?.checked)return toast('Mohon centang konfirmasi biodata sebelum mengirim.','error');
+  if(trainingFee<0)return toast('Nominal pembayaran tidak boleh negatif.','error');
+  
   const client=getSupabaseClient();
   if(!client)return toast('Koneksi Supabase belum siap. Buka link menggunakan domain Netlify/HTTPS dan pastikan Publishable Key terpasang.','error');
   // Pengunjung HP boleh mengirim sebagai role anon. Anonymous Auth tidak wajib,
@@ -20069,5 +20069,82 @@ document.head.appendChild(css);
 </style>
 <footer class="swimora-copyright-footer" aria-label="Hak cipta SWIMORA">© 2026 <strong>Bambang Setya Jatmika, M.Pd.</strong> · SWIMORA. Seluruh hak cipta dilindungi.
 </footer>
+
+<script>
+(function(){
+'use strict';
+/* SWIMORA V20 — tenant removal, optional registration, mobile form, focused PB sessions */
+function toastV20(msg,type){if(typeof toast==='function')toast(msg,type||'info');else console[type==='error'?'error':'log'](msg)}
+function tenantV20FromCard(card){
+ const list=Array.isArray(window.superAdminTenants)?window.superAdminTenants:[];
+ const keys=['tenantId','clubId','id'];
+ for(const k of keys){const v=card?.dataset?.[k];if(v){const hit=list.find(x=>String(x.id)===String(v)||String(x.club_id||'')===String(v));if(hit)return hit}}
+ const text=(card?.innerText||'');
+ const name=(card?.querySelector('.tenant-name,h3,h2,strong')?.textContent||'').trim().toLowerCase();
+ let hit=list.find(x=>String(x.name||x.club_name||'').trim().toLowerCase()===name);
+ if(hit)return hit;
+ const no=Number((text.match(/(?:tenant\s*#?|#)\s*0*(\d+)/i)||[])[1]||0);
+ return no?list.find(x=>Number(x.tenant_no||x.tenant_number)===no):null;
+}
+window.deleteTenant=async function(id,name){
+ let t=(window.superAdminTenants||[]).find(x=>String(x.id)===String(id));
+ if(!t&&id&&typeof id==='object')t=id;
+ if(!t&&name)t=(window.superAdminTenants||[]).find(x=>String(x.name||x.club_name||'').toLowerCase()===String(name).toLowerCase());
+ if(!t?.id){toastV20('ID tenant belum ditemukan. Klik Refresh lalu coba lagi.','error');return false}
+ const label=t.name||t.club_name||name||'tenant';
+ if(!confirm('Hapus tenant “'+label+'” secara permanen? Data terkait tenant dapat ikut terhapus.'))return false;
+ const c=typeof getSupabaseClient==='function'?getSupabaseClient():null;
+ if(!c){toastV20('Koneksi Supabase belum tersedia.','error');return false}
+ try{
+  let r=await c.rpc('delete_swimora_tenant',{p_club_id:t.id});
+  /* Fallback untuk instalasi lama yang belum memiliki RPC. */
+  if(r.error && /function|rpc|does not exist|not found/i.test(String(r.error.message||r.error))){r=await c.from('clubs').delete().eq('id',t.id)}
+  if(r.error)throw r.error;
+  if(r.data&&r.data.ok===false)throw new Error(r.data.message||'Penghapusan ditolak server.');
+  if(typeof refreshSuperAdminDashboard==='function')await refreshSuperAdminDashboard();
+  toastV20('Tenant '+label+' berhasil dihapus.','success');return true;
+ }catch(e){console.error(e);toastV20('Tenant belum terhapus: '+(e.message||e),'error');return false}
+};
+const oldRefreshV20=window.refreshSuperAdminDashboard;
+if(typeof oldRefreshV20==='function')window.refreshSuperAdminDashboard=async function(){
+ const r=await oldRefreshV20.apply(this,arguments);
+ setTimeout(()=>document.querySelectorAll('#tenantGrid .tenant-card').forEach(card=>{
+  const host=card.querySelector('.tenant-actions')||card;let b=card.querySelector('.delete-tenant-btn');
+  if(!b){b=document.createElement('button');b.type='button';b.className='btn btn-outline btn-sm delete-tenant-btn';b.textContent='Hapus';host.appendChild(b)}
+  b.onclick=()=>{const t=tenantV20FromCard(card);if(t)window.deleteTenant(t.id,t.name||t.club_name);else toastV20('ID tenant belum ditemukan.','error')};
+ }),100);return r;
+};
+function optionalize(){
+ document.querySelectorAll('[id^="pR"],[id^="mR"]').forEach(el=>{el.required=false;el.removeAttribute('required')});
+ document.querySelectorAll('label').forEach(l=>{if(/\b(wajib|\*)/.test(l.textContent)&&l.closest('#publicRegisterView,.modal,.sw188-form-wrap'))l.innerHTML=l.innerHTML.replace(/\s*\*\s*/g,' ').replace(/\s*wajib\s*/ig,' ')})
+}
+const oldOpenPublic=window.openPublicRegistration;if(oldOpenPublic)window.openPublicRegistration=function(){const r=oldOpenPublic.apply(this,arguments);setTimeout(optionalize,30);return r};
+const oldOpenInternal=window.openRegistrationModal;if(oldOpenInternal)window.openRegistrationModal=function(){const r=oldOpenInternal.apply(this,arguments);setTimeout(optionalize,50);return r};
+/* Public registration: keep only consent and class/fee business checks; blank biodata is accepted for completion later. */
+const oldSubmitPublic=window.submitPublicRegistration;
+if(oldSubmitPublic)window.submitPublicRegistration=async function(){optionalize();return oldSubmitPublic.apply(this,arguments)};
+/* Internal registration: replace the old hard validation with a permissive save. */
+window.saveRegistration=function(){
+ const v=id=>String(document.getElementById(id)?.value||'').trim();
+ const cls=v('mRclass')||'Pemula A', data={id:typeof uid==='function'?uid('REG'):'REG-'+Date.now(),name:v('mRname'),nickname:v('mRnickname'),gender:v('mRgender'),birthPlace:v('mRbirthPlace'),birth:v('mRbirth'),school:v('mRschool'),nisn:v('mRnisn'),address:v('mRaddress'),medicalHistory:v('mRmedical'),parent:v('mRparent'),phone:v('mRphone'),trainingDays:window.__selectedAdminTrainingDays||[],class:cls,date:typeof nowISO==='function'?nowISO():new Date().toISOString().slice(0,10),status:v('mRstatus')||'Baru',registrationFee:typeof REGISTRATION_FEE!=='undefined'?REGISTRATION_FEE:0,registrationFeePaid:false,registrationFeePaidOn:'',trainingFee:typeof getDefaultFeeForClass==='function'?getDefaultFeeForClass(cls):0};
+ if(!window.db||!Array.isArray(db.registrations)){toastV20('Database pendaftaran belum siap.','error');return}
+ db.registrations.push(data);if(typeof closeModal==='function')closeModal();if(typeof saveDB==='function')saveDB();if(typeof renderRegistrations==='function')renderRegistrations();toastV20('Pendaftaran tersimpan. Data yang belum diisi dapat dilengkapi kemudian.','success')
+};
+/* Compact, clean mobile registration layout. */
+const css=document.createElement('style');css.textContent=`
+@media(max-width:680px){.modal-content{width:calc(100vw - 20px)!important;max-height:92vh!important;border-radius:18px!important}.modal-body{padding:14px!important}.form-grid{grid-template-columns:1fr!important;gap:10px!important}.form-section-title,.field.full{grid-column:1!important}.field label{font-size:12px!important;margin-bottom:5px!important}.field input,.field select,.field textarea{min-height:42px!important;width:100%!important;box-sizing:border-box!important}.public-register-actions{position:sticky!important;bottom:0!important;background:#fff!important;padding:10px 0!important;z-index:3!important}.sw188-form-wrap{width:100%!important;padding:12px!important}.sw188-form-box{border-radius:16px!important;padding:16px!important}.sw188-fields{display:grid!important;grid-template-columns:1fr!important;gap:12px!important}.sw188-field,.sw188-field.full{grid-column:1!important;min-width:0!important}.sw188-field input,.sw188-field select,.sw188-field textarea{width:100%!important;box-sizing:border-box!important;min-height:44px!important}.sw188-form-head{display:flex!important;flex-direction:column!important;gap:10px!important}.sw188-actions{position:sticky!important;bottom:0!important;background:#fff!important;padding-top:10px!important;flex-wrap:wrap!important}.sw188-submit{width:100%!important}.sw188-back{align-self:flex-start!important}}
+.delete-tenant-btn{color:#b42332!important;border-color:#efb1b9!important}.delete-tenant-btn:hover{background:#fff1f2!important}
+.pb-energy-focus{padding:8px 10px;border-left:4px solid #0b8f98;background:#effbfb;border-radius:8px;margin:6px 0;font-size:12px}
+`;document.head.appendChild(css);
+/* PB sessions: each day has one dominant energy objective; warm-up/recovery remain supportive only. */
+const oldPBV20=window.pbPeriodizationForStudent;
+if(oldPBV20)window.pbPeriodizationForStudent=function(s,race,date,weeks){
+ const p=oldPBV20.apply(this,arguments);if(!p)return p;
+ const c=String(s?.class||'').toLowerCase(),cap=c.includes('prestasi')?4200:c.includes('intermediate')?3000:c.includes('pemula b')?1800:1200;
+ p.plan?.forEach(w=>{w.volume=Math.min(Number(w.volume)||cap,cap);const n=Math.max(1,Number(w.sessionsPerWeek)||w.sessions?.length||3);w.sessions=(w.sessions||[]).map((z,i)=>{z.volume=Math.min(Math.max(200,Math.round(w.volume/n)),Math.ceil(cap/n));const focus=i%3===0?{name:'Aerobic Base',energy:'Aerobic oxidative / teknik',note:'Fokus kapasitas aerobik dan efisiensi stroke.'}:i%3===1?{name:'Alactic Speed',energy:'ATP-PC / neuromuscular',note:'Fokus kecepatan alaktik; repetisi pendek dengan recovery penuh.'}:{name:'Threshold / Race Pace',energy:'Threshold atau glycolytic sesuai nomor',note:'Fokus pace nomor; hentikan set bila teknik dan pace turun.'};z.title=String(z.title||'Sesi '+String.fromCharCode(65+i)).replace(/^Sesi\s+[A-Z]+/, 'Sesi '+String.fromCharCode(65+i)+' — '+focus.name);z.energy=focus.energy;z.focusEnergy=focus.name;z.coachNote=(z.coachNote||'')+' '+focus.note;return z})});return p
+};
+})();
+
+</script>
 </body>
 </html>
