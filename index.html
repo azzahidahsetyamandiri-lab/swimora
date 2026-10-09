@@ -19952,5 +19952,113 @@ window.deleteTenant=async function(clubId,clubName='tenant'){
 };
 })();
 </script>
+
+<!-- SWIMORA V19.1 targeted fixes: tenant deletion mapping, registration parity, class report labels, training presentation -->
+<script>
+(function(){
+'use strict';
+function findTenantForCard(card){
+ const list=Array.isArray(window.superAdminTenants)?window.superAdminTenants:[];
+ const direct=card?.dataset?.tenantId||card?.dataset?.clubId||card?.getAttribute('data-tenant-id')||card?.getAttribute('data-club-id');
+ if(direct){const hit=list.find(x=>String(x.id)===String(direct)||String(x.club_id||'')===String(direct));if(hit)return hit;}
+ const slugText=(card?.querySelector('.tenant-slug,.tenant-code,.tenant-meta,.tenant-subtitle')?.textContent||'').trim();
+ const slug=(slugText.match(/\/([a-z0-9-]+)\s*$/i)||[])[1];
+ if(slug){const hit=list.find(x=>String(x.slug||'').toLowerCase()===slug.toLowerCase());if(hit)return hit;}
+ const name=(card?.querySelector('h3,h2,.tenant-name,strong')?.textContent||'').trim();
+ if(name){const hit=list.find(x=>String(x.name||x.club_name||'').trim().toLowerCase()===name.toLowerCase());if(hit)return hit;}
+ const noText=card?.querySelector('.tenant-no')?.textContent||'',no=Number((noText.match(/\d+/)||[])[0]||0);
+ return no?(list.find(x=>Number(x.tenant_no||x.tenant_number)===no)||null):null;
+}
+window.deleteTenant=async function(clubId,clubName='tenant'){
+ let tenant=(window.superAdminTenants||[]).find(x=>String(x.id)===String(clubId));
+ if(!tenant&&clubId&&typeof clubId==='object')tenant=clubId;
+ if(!tenant&&clubName)tenant=(window.superAdminTenants||[]).find(x=>String(x.name||x.club_name||'').trim().toLowerCase()===String(clubName).trim().toLowerCase());
+ if(!tenant||!tenant.id){if(typeof toast==='function')toast('ID tenant belum berhasil dipetakan. Muat ulang daftar tenant lalu coba lagi.','error');return false;}
+ if(Number(tenant.tenant_no||tenant.tenant_number)===1){if(typeof toast==='function')toast('Tenant #001 dilindungi dan tidak dapat dihapus.','error');return false;}
+ const name=tenant.name||tenant.club_name||clubName||'tenant';
+ if(!confirm('Hapus tenant “'+name+'”? Tindakan permanen. Pastikan data sudah diekspor/di-backup.'))return false;
+ try{
+  const client=typeof getSupabaseClient==='function'?getSupabaseClient():null;if(!client)throw new Error('Koneksi Supabase belum tersedia.');
+  const {data,error}=await client.rpc('delete_swimora_tenant',{p_club_id:tenant.id});if(error)throw error;
+  if(data&&data.ok===false)throw new Error(data.message||'Penghapusan ditolak server.');
+  if(typeof refreshSuperAdminDashboard==='function')await refreshSuperAdminDashboard();
+  if(typeof toast==='function')toast('Tenant '+name+' berhasil dihapus.','success');return true;
+ }catch(err){console.error('deleteTenant',err);if(typeof toast==='function')toast('Tenant belum terhapus: '+(err?.message||err)+'. Periksa fungsi RPC dan relasi database.','error');return false;}
+};
+const oldRefresh=window.refreshSuperAdminDashboard;
+if(typeof oldRefresh==='function')window.refreshSuperAdminDashboard=async function(){
+ const result=await oldRefresh.apply(this,arguments);
+ setTimeout(()=>document.querySelectorAll('#tenantGrid .tenant-card').forEach(card=>{
+  const actions=card.querySelector('.tenant-actions')||card;let btn=card.querySelector('.delete-tenant-btn');
+  if(!btn){btn=document.createElement('button');btn.type='button';btn.className='btn btn-outline btn-sm delete-tenant-btn';btn.textContent='Hapus Tenant';actions.appendChild(btn);}
+  btn.onclick=()=>{const tenant=findTenantForCard(card);if(!tenant){if(typeof toast==='function')toast('Data tenant belum sinkron. Klik Refresh lalu coba lagi.','error');return;}window.deleteTenant(tenant.id,tenant.name||tenant.club_name||'tenant');};
+ }),180);
+ return result;
+};
+
+/* Internal registration form: same core fields as public form; only requested fields mandatory. */
+const oldOpenReg=window.openRegistrationModal;
+window.openRegistrationModal=function(){
+ if(typeof oldOpenReg==='function')oldOpenReg.apply(this,arguments);
+ setTimeout(()=>{
+  const grid=document.querySelector('.modal-body .form-grid,.modal-content .form-grid');if(!grid||grid.querySelector('#mRnickname'))return;
+  const add=(id,label,placeholder,type,required)=>{
+   const wrap=document.createElement('div');wrap.className='field'+(['mRaddress','mRmedical'].includes(id)?' full':'');
+   const lab=document.createElement('label');lab.htmlFor=id;lab.innerHTML=label+(required?' <span style="color:#dc2626">*</span>':'');
+   const input=type==='textarea'?document.createElement('textarea'):document.createElement('input');input.id=id;input.name=id;input.placeholder=placeholder;if(type==='textarea')input.rows=2;else input.type=type||'text';input.required=!!required;wrap.append(lab,input);
+   const anchor=document.getElementById('mRclass')?.closest('.field');if(anchor)anchor.insertAdjacentElement('beforebegin',wrap);else grid.appendChild(wrap);
+  };
+  add('mRnickname','Nama Panggilan','Nama panggilan','text',true);
+  add('mRnisn','NISN (opsional)','Nomor NISN','text',false);
+  add('mRaddress','Alamat Lengkap','Alamat domisili','textarea',true);
+  add('mRmedical','Penyakit yang Pernah Diderita / Riwayat Kesehatan','Tuliskan “Tidak ada” jika tidak ada','textarea',true);
+  const label=(id,text,req)=>{const el=document.getElementById(id),l=el?.closest('.field')?.querySelector('label');if(l)l.innerHTML=text+(req?' <span style="color:#dc2626">*</span>':'');if(el)el.required=!!req;};
+  label('mRname','Nama Lengkap',true);label('mRbirthPlace','Tempat Lahir',true);label('mRbirth','Tanggal Lahir',true);label('mRparent','Nama Orang Tua/Wali',true);label('mRphone','Nomor HP Orang Tua',true);
+  label('mRschool','Asal Sekolah',true);label('mRgender','Jenis Kelamin (opsional)',false);label('mRnisn','NISN',true);
+ },80);
+};
+window.saveRegistration=function(){
+ const get=id=>(document.getElementById(id)?.value||'').trim();
+ const required=[['mRname','Nama Lengkap'],['mRnickname','Nama Panggilan'],['mRbirthPlace','Tempat Lahir'],['mRbirth','Tanggal Lahir'],['mRaddress','Alamat'],['mRmedical','Riwayat kesehatan'],['mRparent','Nama Orang Tua'],['mRphone','Nomor HP Orang Tua'],['mRschool','Asal Sekolah'],['mRnisn','NISN']];
+ const missing=required.filter(([id])=>!get(id));
+ if(missing.length){if(typeof toast==='function')toast('Lengkapi data wajib: '+missing.map(x=>x[1]).join(', ')+'.','error');document.getElementById(missing[0][0])?.focus();return;}
+ const cls=get('mRclass'),fee=typeof getDefaultFeeForClass==='function'?getDefaultFeeForClass(cls):0;
+ const data={id:typeof uid==='function'?uid('REG'):'REG-'+Date.now(),name:get('mRname'),nickname:get('mRnickname'),gender:get('mRgender'),birthPlace:get('mRbirthPlace'),birth:get('mRbirth'),school:get('mRschool'),nisn:get('mRnisn'),address:get('mRaddress'),medicalHistory:get('mRmedical'),parent:get('mRparent'),phone:get('mRphone'),class:cls,date:typeof nowISO==='function'?nowISO():new Date().toISOString().slice(0,10),status:get('mRstatus')||'Baru',registrationFee:typeof REGISTRATION_FEE!=='undefined'?REGISTRATION_FEE:0,registrationFeePaid:false,registrationFeePaidOn:'',trainingFee:fee,trainingDays:window.__selectedAdminTrainingDays||[]};
+ if(!window.db||!Array.isArray(db.registrations)){if(typeof toast==='function')toast('Database pendaftaran belum siap.','error');return;}
+ db.registrations.push(data);if(typeof closeModal==='function')closeModal();if(typeof saveDB==='function')saveDB();if(typeof renderRegistrations==='function')renderRegistrations();if(typeof toast==='function')toast('Pendaftaran tersimpan. Data opsional dapat dilengkapi kemudian.');
+};
+
+/* Class-specific report indicators; selected athlete's class determines every label. */
+const rubrics={
+ pemulaA:{label:'Pemula A',desc:'Adaptasi air untuk peserta yang belum bisa berenang.',f:{water:'Adaptasi dan keselamatan air',breath:'Membasahi wajah dan meniup gelembung',stream:'Mengapung dan meluncur dengan bantuan',free:'Gerak kaki dasar dengan alat',back:'Orientasi telentang dengan bantuan',breast:'Eksplorasi gerak kaki/tangan dasar',fly:'Belum menjadi indikator utama',start:'Masuk/keluar kolam dengan aman',turn:'Kembali ke dinding dengan aman',endurance:'Toleransi latihan ringan',speed:'Kualitas gerak, bukan target waktu',disc:'Mengikuti instruksi keselamatan',att:'Keberanian dan rasa nyaman'}},
+ pemulaB:{label:'Pemula B',desc:'Tahap dasar; belum mensyaratkan peserta mampu berenang mandiri.',f:{water:'Keselamatan dan kemandirian bertahap',breath:'Ritme napas dan meniup di air',stream:'Mengapung dan meluncur makin mandiri',free:'Kick, tangan, dan koordinasi dasar',back:'Posisi telentang dan kick dasar',breast:'Kick/tangan gaya dada dasar',fly:'Belum menjadi indikator utama',start:'Dorongan dinding aman',turn:'Berhenti dan kembali ke tepi',endurance:'Menyelesaikan latihan sesuai kemampuan',speed:'Kontrol gerak',disc:'Mengikuti instruksi',att:'Keberanian dan usaha'}},
+ intermediate:{label:'Intermediate',desc:'Minimal tiga gaya dikuasai; teknik menjadi prioritas dengan fondasi aerobik dan kecepatan dasar progresif.',f:{water:'Efisiensi dan kontrol tubuh di air',breath:'Pola napas saat berenang berkelanjutan',stream:'Streamline dan posisi tubuh',free:'Koordinasi/efisiensi gaya bebas',back:'Koordinasi gaya punggung',breast:'Koordinasi gaya dada',fly:'Gaya keempat sesuai kesiapan',start:'Start dan dorongan dinding',turn:'Turn dan finish',endurance:'Set aerobik sesuai kemampuan',speed:'Kecepatan pendek dengan teknik terjaga',disc:'Kehadiran dan disiplin',att:'Fokus dan refleksi teknik'}},
+ prestasi:{label:'Prestasi',desc:'Empat gaya dikuasai; evaluasi individual berdasarkan nomor, PB, teknik dan kesiapan kompetisi.',f:{water:'Efisiensi pada kecepatan lomba',breath:'Pola napas sesuai nomor',stream:'Streamline/underwater/breakout',free:'Teknik dan race pace bebas',back:'Teknik dan race pace punggung',breast:'Teknik dan race pace dada',fly:'Teknik dan race pace kupu-kupu',start:'Reaksi dan fase start',turn:'Turn, breakout, finish',endurance:'Kualitas repetisi sesuai fase',speed:'PB dan strategi nomor',disc:'Program dan pemulihan',att:'Kesiapan mental lomba'}},
+ privat:{label:'Kelas Privat',desc:'Target individual dari bisa berenang hingga perbaikan teknik.',f:{water:'Keselamatan dan adaptasi sesuai target',breath:'Kontrol napas sesuai kebutuhan',stream:'Mengapung dan meluncur',free:'Kemajuan gaya/teknik pilihan',back:'Gaya punggung jika menjadi target',breast:'Gaya dada jika menjadi target',fly:'Gaya kupu-kupu jika menjadi target',start:'Awal gerak yang aman',turn:'Berhenti/berbalik dengan aman',endurance:'Jarak sesuai target individu',speed:'Kualitas gerak',disc:'Konsistensi latihan',att:'Kepercayaan diri'}},
+ kedinasan:{label:'Persiapan Tes Kedinasan',desc:'Satu gaya pilihan dengan teknik efisien, jarak target, pacing dan simulasi sesuai ketentuan tes.',f:{water:'Keselamatan dan kesiapan tes',breath:'Pola napas teratur',stream:'Streamline dan hambatan air',free:'Teknik gaya pilihan',back:'Dinilai jika gaya pilihan',breast:'Dinilai jika gaya pilihan',fly:'Dinilai jika gaya pilihan',start:'Start aman dan konsisten',turn:'Pembalikan/finish sesuai tes',endurance:'Menyelesaikan jarak target',speed:'Pacing dan waktu tes',disc:'Konsistensi program',att:'Percaya diri saat simulasi'}}
+};
+window.reportClassProfile=function(s){
+ const c=String(s?.class||'').toLowerCase();
+ const k=c.includes('kedinasan')?'kedinasan':c.includes('privat')?'privat':c.includes('prestasi')?'prestasi':c.includes('intermediate')?'intermediate':(c.includes('pemula b')||c==='b'||c.includes('kelas b'))?'pemulaB':'pemulaA';
+ const p=rubrics[k],f=p.f;return{label:p.label,desc:p.desc,fields:{water:f.water,breath:f.breath,stream:f.stream,free:f.free,back:f.back,breast:f.breast,fly:f.fly,start:f.start,turn:f.turn,endurance:f.endurance,speed:f.speed,disc:f.disc,att:f.att}};
+};
+const oldOpenReport=window.openReportModal;
+window.openReportModal=function(id=''){
+ if(typeof oldOpenReport==='function')oldOpenReport.apply(this,arguments);
+ setTimeout(()=>{
+  const sid=document.getElementById('mRptStudent')?.value||((window.db?.reports||[]).find(x=>x.id===id)?.studentId);
+  const s=(window.db?.students||[]).find(x=>String(x.id)===String(sid));if(!s)return;
+  const p=window.reportClassProfile(s),f=p.fields;
+  const map={mRptWater:f.water,mRptBreath:f.breath,mRptStream:f.stream,mRptFree:f.free,mRptBack:f.back,mRptBreast:f.breast,mRptFly:f.fly,mRptStartDive:f.start,mRptTurn:f.turn,mRptEndurance:f.endurance,mRptSpeed:f.speed,mRptDisc:f.disc,mRptAttitude:f.att};
+  Object.entries(map).forEach(([id,t])=>{const el=document.getElementById(id),l=el?.closest('.field')?.querySelector('label');if(l)l.textContent=t;});
+  const modal=document.querySelector('.modal-body,.modal-content');if(modal){let n=modal.querySelector('.swm-report-class-note');if(!n){n=document.createElement('div');n.className='swm-report-class-note';n.style.cssText='grid-column:1/-1;background:linear-gradient(110deg,#073344,#087f8c);color:#fff;padding:12px 16px;border-radius:12px;margin:8px 0';(modal.querySelector('.form-grid')||modal).prepend(n);}n.innerHTML='<b>Indikator '+p.label+'</b><div style="margin-top:4px;font-size:13px">'+p.desc+'</div>';}
+ },100);
+};
+const css=document.createElement('style');
+css.textContent='.program-card,.training-program-card,.program-day-card{border-radius:18px!important;border:1px solid #d4e8e9!important;box-shadow:0 10px 26px rgba(8,45,59,.08)!important;overflow:hidden}.program-card .card-head,.training-program-card .card-head,.program-day-card .card-head{background:linear-gradient(110deg,#082d3b,#087f8c)!important;color:#fff!important;padding:14px 18px!important}.program-section-title,.program-block-title{background:#eff9e9!important;border-left:4px solid #b8f13e!important;padding:9px 12px!important;border-radius:8px!important;font-weight:850!important;color:#123c48!important}.swm-report-class-note{font-size:13px;line-height:1.5}';
+document.head.appendChild(css);
+})();
+</script>
+
 </body>
 </html>
