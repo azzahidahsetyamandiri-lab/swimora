@@ -4333,25 +4333,20 @@ async function login(e){
     const client=getSupabaseClient();if(!client)return toast('Koneksi Supabase belum siap.','error');
     const btn=e.submitter||document.querySelector('#loginForm button[type="submit"]');if(btn){btn.disabled=true;btn.textContent='Memeriksa data anak...';}
     try{
-      // Cari nomor dalam format lokal maupun internasional. Kolom parent_phone
-      // pada database kadang disimpan sebagai 08..., 628..., atau +628....
-      const local=phone.replace(/^62/,'0');
-      const intl=phone.replace(/^0/,'62');
-      const plusIntl='+'+intl;
-      const digits=phone.replace(/\D/g,'');
-      const variants=[phone,local,intl,plusIntl, digits, digits.replace(/^62/,'0'), digits.replace(/^0/,'62')]
-        .filter((v,i,a)=>v&&a.indexOf(v)===i);
-      const result=await client.from('students').select('*').in('parent_phone',variants);
-      if(result.error)throw result.error;
-      // PENTING: cocokkan nomor pada kolom parent_phone SEBELUM mengubah bentuk data.
-      // cloudRowToStudent dapat memetakan s.phone ke nomor HP siswa, bukan nomor wali.
-      const digitsOnly=v=>String(v??'').replace(/\D/g,'');
-      const normalizeParent=v=>{let d=digitsOnly(v);if(d.startsWith('62'))d='0'+d.slice(2);if(d&&!d.startsWith('0'))d='0'+d;return d;};
-      const targetParent=normalizeParent(phoneInput);
-      const rawChildren=(result.data||[]).filter(row=>normalizeParent(row.parent_phone)===targetParent);
+      // Login orang tua menggunakan RPC database agar pencarian tidak gagal
+      // hanya karena kebijakan RLS melarang akses langsung ke tabel students.
+      // Fungsi parent_login_lookup harus dipasang melalui file SQL pendamping.
+      const result=await client.rpc('parent_login_lookup',{p_phone:phoneInput,p_pin:pin});
+      if(result.error)throw new Error(result.error.message.includes('parent_login_lookup')
+        ? 'Fungsi login database belum dipasang. Jalankan file SQL perbaikan login orang tua di Supabase terlebih dahulu.'
+        : result.error.message);
+      // RPC parent_login_lookup sudah memverifikasi nomor HP + PIN di database.
+      // Jangan menyaring ulang berdasarkan row.parent_phone di browser: fungsi SQL
+      // boleh mengembalikan kolom terbatas tanpa parent_phone, yang sebelumnya
+      // membuat hasil valid dibuang dan login selalu dianggap gagal.
+      const rawChildren=Array.isArray(result.data)?result.data:[];
       const children=rawChildren.map(cloudRowToStudent);
-      if(!children.length)throw new Error('Nomor HP belum ditemukan pada kolom parent_phone. Pastikan nomor wali diisi tanpa salah ketik, lalu coba lagi.');
-      if(digitsOnly(phoneInput).slice(-4)!==pin)throw new Error('PIN harus 4 digit terakhir nomor HP orang tua yang dimasukkan.');
+      if(!children.length)throw new Error('Nomor HP orang tua atau PIN tidak cocok dengan data siswa. Pastikan nomor wali tersimpan pada kolom parent_phone dan PIN adalah 4 digit terakhir nomor tersebut.');
       db.students=children;currentParentPhone=targetParent;currentRole='parent';currentParentStudentId=children[0].id;enterApp('parent');toast(`Login orang tua berhasil. Anak ditemukan: ${children.map(s=>s.name).join(', ')}`);
     }catch(err){toast('Login orang tua gagal: '+(err?.message||err),'error');}
     finally{if(btn){btn.disabled=false;btn.textContent='Masuk ke Sistem →';}}
