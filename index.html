@@ -4810,7 +4810,7 @@ const oldOpenReportModal=window.openReportModal;window.openReportModal=function(
   const oldEnterApp=window.enterApp;
   function parentQrPayload(s){return 'SWIMORA|ABSEN|'+String(s?.id||s?.memberCode||s?.qrCode||'')+'|'+String(s?.name||'')}
   function renderParentQR(){
-    if(currentRole!=='parent')return;
+    if(currentRole!=='parent'){document.getElementById('parentQrCard')?.remove();return;}
     const s=student(currentParentStudentId)||db.students.find(x=>phoneMatches(x.phone||x.parentPhone||x.parent_phone,currentParentPhone));
     if(!s)return;
     let card=document.getElementById('parentQrCard');
@@ -20773,6 +20773,45 @@ window.addEventListener('focus',()=>sw23RefreshStudents(true));window.addEventLi
 window.addEventListener('load',()=>{const bar=document.querySelector('#view-students .section-toolbar .right');if(bar&&!bar.querySelector('.sw23-sync-students')){const b=document.createElement('button');b.className='btn btn-outline sw23-sync-students';b.type='button';b.textContent='Sinkron Data Siswa';b.onclick=()=>sw23RefreshStudents(false);bar.prepend(b)}});
 })();
 
+</script>
+
+<script>
+/* SWIMORA QR SESSION ISOLATION FIX V3: never show a parent's selected child QR in admin/tenant screens. */
+(function(){
+  function clearParentQR(){
+    document.getElementById('parentQrCard')?.remove();
+    document.querySelectorAll('.parent-qr-card').forEach(el=>el.remove());
+  }
+  const previousLogout=window.logout;
+  if(typeof previousLogout==='function'){
+    window.logout=async function(){
+      clearParentQR();
+      try{return await previousLogout.apply(this,arguments);}
+      finally{clearParentQR();}
+    };
+  }
+  const previousEnter=window.enterApp;
+  if(typeof previousEnter==='function'){
+    window.enterApp=function(){
+      if(window.currentRole!=='parent')clearParentQR();
+      const result=previousEnter.apply(this,arguments);
+      if(window.currentRole!=='parent')clearParentQR();
+      return result;
+    };
+  }
+  const previousNavigate=window.navigate;
+  if(typeof previousNavigate==='function'){
+    window.navigate=function(){
+      if(window.currentRole!=='parent')clearParentQR();
+      const result=previousNavigate.apply(this,arguments);
+      if(window.currentRole!=='parent')clearParentQR();
+      return result;
+    };
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    if(window.currentRole!=='parent')clearParentQR();
+  });
+})();
 </script>
 </body>
 </html>
