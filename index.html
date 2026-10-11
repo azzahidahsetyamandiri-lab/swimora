@@ -3802,7 +3802,19 @@ function saveSettings(){db.settings.foundation=document.getElementById('foundati
 function saveSupabaseConfig(){const url=normalizeSupabaseUrl(document.getElementById('supabaseUrl').value);const key=document.getElementById('supabaseKey').value.trim();if(!url||!isUsableSupabaseKey(key))return toast('URL dan Publishable/Anon Key Supabase wajib valid. Jangan gunakan secret/service_role key.','error');supabaseClient=null;renderSettings();toast('Override koneksi Supabase tersimpan untuk browser ini. Konfigurasi deployment tetap menjadi default perangkat baru.')}
 
 let currentParentStudentId='';
-function parentOwnedChildren(){return db.students.filter(s=>normalizePhone(s.phone)===currentParentPhone)}
+function canonicalParentPhone(raw){
+  let digits=normalizePhone(String(raw||''));
+  if(digits.startsWith('62'))digits='0'+digits.slice(2);
+  else if(digits.startsWith('8'))digits='0'+digits;
+  return digits;
+}
+function parentPhoneVariants(raw){
+  const digits=normalizePhone(String(raw||''));
+  const local=canonicalParentPhone(digits);
+  const national=local.startsWith('0')?'62'+local.slice(1):local;
+  return [...new Set([digits,local,national,'+'+national].filter(Boolean))];
+}
+function parentOwnedChildren(){return db.students.filter(s=>canonicalParentPhone(s.phone)===currentParentPhone)}
 function selectParentChild(id){if(!parentOwnedChildren().some(s=>s.id===id))return;currentParentStudentId=id;renderParentPortal()}
 function parentAttendanceThisMonth(studentId){const ym=nowISO().slice(0,7);return db.attendance.filter(a=>a.studentId===studentId&&a.date.startsWith(ym)).length}
 function parentCheckIn(studentId){
@@ -4328,20 +4340,36 @@ async function forgotPassword(){const email=document.getElementById('adminUser')
 async function login(e){
   e.preventDefault();
   if(loginRole!=='admin'){
-    const phoneInput=document.getElementById('parentPhone')?.value||'', pin=document.getElementById('parentPin')?.value||'', phone=normalizePhone(phoneInput);
-    if(phone.length<8||!/^\d{4}$/.test(pin))return toast('Masukkan nomor HP terdaftar dan 4 digit terakhir nomor HP.','error');
+    const phoneInput=document.getElementById('parentPhone')?.value||'';
+    const pin=String(document.getElementById('parentPin')?.value||'').trim();
+    const phone=canonicalParentPhone(phoneInput);
+    if(phone.length<8||!/^[0-9]{4}$/.test(pin))return toast('Masukkan nomor HP orang tua dan 4 digit terakhir nomor HP tersebut.','error');
+    if(phone.slice(-4)!==pin)return toast('PIN harus sama dengan 4 digit terakhir nomor HP orang tua.','error');
     const client=getSupabaseClient();if(!client)return toast('Koneksi Supabase belum siap.','error');
-    const btn=e.submitter||document.querySelector('#loginForm button[type="submit"]');if(btn){btn.disabled=true;btn.textContent='Memeriksa data anak...';}
+    const btn=e.submitter||document.querySelector('#loginForm button[type="submit"]');
+    const oldText=btn?.textContent;
+    if(btn){btn.disabled=true;btn.textContent='Mencari data anak...';}
     try{
-      const variants=[phone,phone.replace(/^62/,'0'),phone.replace(/^0/,'62')].filter((v,i,a)=>v&&a.indexOf(v)===i);
-      const result=await client.from('students').select('*').in('parent_phone',variants);
-      if(result.error)throw result.error;
-      const children=(result.data||[]).map(cloudRowToStudent).filter(s=>normalizePhone(s.phone)===phone||normalizePhone(s.phone).replace(/^62/,'0')===phone.replace(/^62/,'0'));
-      if(!children.length)throw new Error('Nomor HP tidak ditemukan pada data siswa.');
-      if(phone.slice(-4)!==pin)throw new Error('PIN harus 4 digit terakhir nomor HP.');
-      db.students=children;currentParentPhone=phone;currentRole='parent';currentParentStudentId=children[0].id;enterApp('parent');toast('Login orang tua berhasil.');
-    }catch(err){toast('Login orang tua gagal: '+(err?.message||err),'error');}
-    finally{if(btn){btn.disabled=false;btn.textContent='Masuk ke Sistem →';}}
+      // Cari nomor dalam format 08..., 62..., +62..., termasuk nomor yang tersimpan dengan pemisah.
+      const variants=parentPhoneVariants(phoneInput);
+      const lastDigits=phone.slice(-6);
+      const [exactResult,suffixResult]=await Promise.all([
+        client.from('students').select('*').in('parent_phone',variants),
+        client.from('students').select('*').ilike('parent_phone','%'+lastDigits+'%')
+      ]);
+      if(exactResult.error && suffixResult.error)throw exactResult.error;
+      const rawRows=[...(exactResult.data||[]),...(suffixResult.data||[])];
+      const uniqueRows=[...new Map(rawRows.map(row=>[String(row.id||row.member_code||row.full_name+'|'+row.parent_phone),row])).values()];
+      const children=uniqueRows.map(cloudRowToStudent).filter(s=>canonicalParentPhone(s.phone)===phone);
+      if(!children.length)throw new Error('Nomor HP belum ditemukan pada data siswa. Periksa nomor HP orang tua yang tersimpan di data siswa, termasuk kode negara 62 atau awalan 0.');
+      db.students=children;
+      currentParentPhone=phone;
+      currentRole='parent';
+      currentParentStudentId=children[0].id;
+      enterApp('parent');
+      toast(children.length>1?`Login berhasil. ${children.length} anak ditemukan; pilih nama anak di bagian atas portal.`:`Login berhasil. Data ${children[0].name} ditemukan.`);
+    }catch(err){toast('Login orang tua gagal: '+(err?.message||'Data tidak ditemukan.'),'error');}
+    finally{if(btn){btn.disabled=false;btn.textContent=oldText||'Masuk ke Sistem →';}}
     return;
   }
   const email=document.getElementById('adminUser').value.trim(),password=document.getElementById('adminPass').value,client=getSupabaseClient();
@@ -4439,7 +4467,7 @@ function updatePBPeriodPreview(){const s=student(val('mPBPstudent')),p=s&&pbPeri
 function openPBProgramModal(){const eligible=db.students.filter(s=>timingRacesForStudent(s).length);if(!eligible.length)return toast('Belum ada siswa dengan catatan PB. Tambahkan catatan waktu di menu Progres Event terlebih dahulu.','error');const first=eligible[0],races=timingRacesForStudent(first),defaultCompetition=new Date(Date.now()+56*86400000).toISOString().slice(0,10);openModal('Program Periodisasi Berbasis PB',`<div class="hint">Program ini tidak terbatas satu pertemuan. Sistem menyusun fase fondasi, build, race-specific, dan taper menuju tanggal kompetisi berdasarkan PB siswa.</div><div class="form-grid"><div class="field"><label>Siswa</label><select id="mPBPstudent" onchange="refreshPBPeriodStudent()">${eligible.map(s=>`<option value="${s.id}">${esc(s.name)} • ${esc(s.class)}</option>`).join('')}</select></div><div class="field"><label>Nomor / Gaya</label><select id="mPBRace">${races.map(r=>`<option>${esc(r)}</option>`).join('')}</select></div><div class="field"><label>Tanggal Kompetisi / Puncak</label><input id="mPBCompetition" type="date" value="${defaultCompetition}"></div><div class="field"><label>Durasi Program (minggu)</label><input id="mPBWeeks" type="number" min="2" max="24" value="8"></div><div class="field full" id="pbPeriodPreview"></div></div><div class="small muted">Pelatih tetap menyesuaikan volume dan intensitas dengan usia, kesehatan, kalender lomba, dan respons latihan siswa.</div>`,'Cetak Program','printPBPeriodization()');setTimeout(()=>{['mPBRace','mPBCompetition','mPBWeeks'].forEach(id=>document.getElementById(id)?.addEventListener('change',updatePBPeriodPreview));updatePBPeriodPreview()},50)}
 function refreshPBPeriodStudent(){const s=student(val('mPBPstudent')),el=document.getElementById('mPBRace');if(!s||!el)return;el.innerHTML=timingRacesForStudent(s).map(r=>`<option>${esc(r)}</option>`).join('');updatePBPeriodPreview()}
 function printPBPeriodization(){const s=student(val('mPBPstudent')),p=s&&pbPeriodizationForStudent(s,val('mPBRace'),val('mPBCompetition'),val('mPBWeeks'));if(!p)return toast('Lengkapi data program dan pastikan PB tersedia.','error');const w=window.open('','_blank');if(!w)return toast('Izinkan pop-up browser untuk mencetak program.','error');w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Periodisasi PB ${esc(s.name)}</title><style>@page{size:A4;margin:14mm}body{font-family:Arial;color:#163246}h1{color:#087c82;margin-bottom:3px}.meta{color:#5a7180;font-size:12px;margin-bottom:15px}.week{border:1px solid #cfe0e5;border-radius:10px;padding:10px 14px;margin:0 0 10px;break-inside:avoid}.week h2{font-size:15px;margin:0 0 3px;color:#0a6d9c}.week p{font-size:11px;color:#5a7180;margin:0 0 5px}.week ol{margin:5px 0;padding-left:20px}.week li{font-size:11px;margin:4px 0}</style></head><body><h1>Program Latihan Menuju Puncak Kompetisi</h1><div class="meta">${esc(s.name)} • ${esc(s.class)} • ${esc(p.race)} • PB ${esc(p.pb)} • Kompetisi ${fmtDate(p.competitionDate)} • ${p.weeks} minggu</div>${p.plan.map(x=>`<section class="week"><h2>Minggu ${x.week} — ${esc(x.phase)}</h2><p>${esc(x.focus)} • Volume ±${x.volume} m</p><ol>${x.sets.map(y=>`<li>${esc(y)}</li>`).join('')}</ol></section>`).join('')}<p class="meta">Catatan pelatih: sesuaikan beban dengan kondisi harian dan hentikan latihan bila siswa mengalami nyeri atau keluhan kesehatan.</p><script>window.onload=()=>setTimeout(()=>window.print(),400)<\/script></body></html>`);w.document.close();closeModal()}
-function parentPhoneVariants(raw){const d=normalizePhone(raw);if(!d)return[];const noZero=d.replace(/^0+/,'');return [...new Set([d,'0'+noZero,'62'+noZero,'+62'+noZero])].filter(Boolean)}
+// parentPhoneVariants is defined with canonical phone handling above.
 function parentPinMatches(row,rawPin,phone){const entered=String(rawPin||'').trim();if(!entered)return false;const stored=String(row.parent_pin||row.parentPin||'').trim();if(stored)return entered===stored;const d=normalizePhone(phone);return entered===d.slice(-4)}
 // Parent-login wrapper removed in V16.8 Stable: consolidated into login().
 
