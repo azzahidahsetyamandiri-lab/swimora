@@ -4819,6 +4819,9 @@ const oldOpenReportModal=window.openReportModal;window.openReportModal=function(
     try{QRCode.toCanvas(document.getElementById('parentQrCanvas'),parentQrPayload(s),{width:180,margin:2,color:{dark:'#071a2d',light:'#ffffff'}},function(){})}catch(e){const c=document.getElementById('parentQrCanvas');const ctx=c?.getContext('2d');if(ctx){ctx.fillStyle='#071a2d';ctx.fillRect(0,0,180,180);ctx.fillStyle='#fff';ctx.font='bold 12px Arial';ctx.fillText(String(s.id||'QR'),62,92)}}
   }
   window.enterApp=function(mode){const r=oldEnterApp?.apply(this,arguments);setTimeout(renderParentQR,180);return r};
+  /* FIX: perbarui kartu QR setiap kali orang tua memilih anak lain. */
+  const oldSelectParentChild=window.selectParentChild;
+  window.selectParentChild=function(id){if(typeof oldSelectParentChild==='function')oldSelectParentChild.apply(this,arguments);setTimeout(renderParentQR,0);};
   window.printParentQR=async function(){
     const s=student(currentParentStudentId);
     if(!s)return toast('Data siswa belum tersedia.','error');
