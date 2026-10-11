@@ -3803,7 +3803,7 @@ function saveSupabaseConfig(){const url=normalizeSupabaseUrl(document.getElement
 
 let currentParentStudentId='';
 function parentOwnedChildren(){return db.students.filter(s=>normalizePhone(s.phone)===currentParentPhone)}
-function selectParentChild(id){if(!parentOwnedChildren().some(s=>s.id===id))return;currentParentStudentId=id;renderParentPortal()}
+function selectParentChild(id){if(!parentOwnedChildren().some(s=>s.id===id))return;currentParentStudentId=id;renderParentPortal();if(typeof window.refreshParentQR==='function')window.refreshParentQR()}
 function parentAttendanceThisMonth(studentId){const ym=nowISO().slice(0,7);return db.attendance.filter(a=>a.studentId===studentId&&a.date.startsWith(ym)).length}
 function parentCheckIn(studentId){
   toast('Absensi Orang Tua belum diaktifkan pada Full Admin Cloud sampai autentikasi orang tua dibuat aman. Gunakan Absensi Admin untuk sementara.','error');
@@ -4818,6 +4818,7 @@ const oldOpenReportModal=window.openReportModal;window.openReportModal=function(
     card.innerHTML='<div class="parent-qr-copy"><span class="eyebrow">KARTU ABSENSI DIGITAL</span><h2>QR '+esc(s.name||'Siswa')+'</h2><p>Tunjukkan QR ini kepada admin untuk absensi. Kode siswa: <b>'+esc(s.id||'-')+'</b></p><button class="btn btn-outline btn-sm" type="button" onclick="printParentQR()">Cetak QR</button></div><div class="parent-qr-box"><canvas id="parentQrCanvas" width="180" height="180"></canvas><small>SCAN UNTUK ABSENSI</small></div>';
     try{QRCode.toCanvas(document.getElementById('parentQrCanvas'),parentQrPayload(s),{width:180,margin:2,color:{dark:'#071a2d',light:'#ffffff'}},function(){})}catch(e){const c=document.getElementById('parentQrCanvas');const ctx=c?.getContext('2d');if(ctx){ctx.fillStyle='#071a2d';ctx.fillRect(0,0,180,180);ctx.fillStyle='#fff';ctx.font='bold 12px Arial';ctx.fillText(String(s.id||'QR'),62,92)}}
   }
+  window.refreshParentQR=renderParentQR;
   window.enterApp=function(mode){const r=oldEnterApp?.apply(this,arguments);setTimeout(renderParentQR,180);return r};
   window.printParentQR=async function(){
     const s=student(currentParentStudentId);
