@@ -19,8 +19,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#31887f" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2215%22%20fill%3D%22%234d775c%22%2F%3E%3Cpath%20d%3D%22M15%2024c8-7%2016%207%2034%200v8c-18%207-26-7-34%200zm0%2014c8-7%2016%207%2034%200v8c-18%207-26-7-34%200z%22%20fill%3D%22%23dfecc3%22%2F%3E%3C%2Fsvg%3E">
-  <title>SWIMORA V23 | Toska Army</title>
-  <meta name="description" content="SWIMORA by Azzahidah Sport Management — platform manajemen klub olahraga. Workspace pertama: Trudgen Swimming Club." />
+  <title>Pendaftaran Siswa Baru | Klub Renang</title>
+  <meta name="description" content="Pendaftaran siswa baru klub renang. Pilih kelas dan lengkapi formulir calon atlet." />
   
   
   <style>
@@ -2675,6 +2675,11 @@ button:disabled,.btn:disabled{cursor:not-allowed;opacity:.62;transform:none!impo
 window.addEventListener('error',function(e){try{console.error('[SWIMORA V16.8]',e.error||e.message)}catch(_){}});
 window.addEventListener('unhandledrejection',function(e){try{console.error('[SWIMORA V16.8] Promise rejection',e.reason)}catch(_){}});
 </script>
+<meta property="og:title" content="Pendaftaran Siswa Baru | Klub Renang" />
+<meta property="og:description" content="Pilih kelas renang dan isi formulir pendaftaran calon atlet." />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Pendaftaran Siswa Baru | Klub Renang" />
 
 <style id="swimora-v23-mobile-registration-fix">
 /* Mobile registration: allow the complete form to scroll instead of clipping inside a fixed-height panel. */
@@ -4333,12 +4338,14 @@ async function login(e){
     const client=getSupabaseClient();if(!client)return toast('Koneksi Supabase belum siap.','error');
     const btn=e.submitter||document.querySelector('#loginForm button[type="submit"]');if(btn){btn.disabled=true;btn.textContent='Memeriksa data anak...';}
     try{
-      const variants=[phone,phone.replace(/^62/,'0'),phone.replace(/^0/,'62')].filter((v,i,a)=>v&&a.indexOf(v)===i);
+      // Normalisasi nomor Indonesia: 08..., 628..., +628... dan variasi tanpa tanda baca.
+      const canonicalPhone=value=>{let d=normalizePhone(value);if(d.startsWith('62'))d='0'+d.slice(2);if(d&&!d.startsWith('0'))d='0'+d;return d;};
+      const variants=[...new Set([...parentPhoneVariants(phone),phone,canonicalPhone(phone)].filter(Boolean))];
       const result=await client.from('students').select('*').in('parent_phone',variants);
       if(result.error)throw result.error;
-      const children=(result.data||[]).map(cloudRowToStudent).filter(s=>normalizePhone(s.phone)===phone||normalizePhone(s.phone).replace(/^62/,'0')===phone.replace(/^62/,'0'));
-      if(!children.length)throw new Error('Nomor HP tidak ditemukan pada data siswa.');
-      if(phone.slice(-4)!==pin)throw new Error('PIN harus 4 digit terakhir nomor HP.');
+      const children=(result.data||[]).map(cloudRowToStudent).filter(s=>canonicalPhone(s.phone||s.parentPhone||s.parent_phone)===canonicalPhone(phone));
+      if(!children.length)throw new Error('Nomor HP tidak ditemukan pada data siswa. Periksa nomor HP wali yang tersimpan di data atlet.');
+      if(canonicalPhone(phone).slice(-4)!==pin)throw new Error('PIN harus 4 digit terakhir nomor HP yang dimasukkan.');
       db.students=children;currentParentPhone=phone;currentRole='parent';currentParentStudentId=children[0].id;enterApp('parent');toast('Login orang tua berhasil.');
     }catch(err){toast('Login orang tua gagal: '+(err?.message||err),'error');}
     finally{if(btn){btn.disabled=false;btn.textContent='Masuk ke Sistem →';}}
@@ -19907,7 +19914,7 @@ window.sw188Submit=function(){
 window.openPublicRegistration=function(){activate(home())};
 window.closePublicRegistration=function(){document.documentElement.classList.remove('sw188-public');document.body.classList.remove('sw188-public');var r=root();if(r)r.classList.remove('sw188-public');if(typeof currentRole!=='undefined'&&currentRole){r?.classList.add('hidden');document.getElementById('appView')?.classList.remove('hidden')}else{r?.classList.add('hidden');document.getElementById('loginView')?.classList.remove('hidden')}};
 window.addEventListener('load',function(){
- var path=location.pathname||'';var isPublic=/\/pendaftaran\//i.test(path)||new URLSearchParams(location.search).get('register')==='1';
+ var path=location.pathname||'';var isPublic=true;
  if(isPublic){setTimeout(function(){window.openPublicRegistration()},30);}
  else{
    document.documentElement.classList.remove('sw188-public');document.body.classList.remove('sw188-public');
