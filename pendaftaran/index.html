@@ -2680,58 +2680,6 @@ window.addEventListener('unhandledrejection',function(e){try{console.error('[SWI
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary" />
 <meta name="twitter:title" content="Pendaftaran Siswa Baru | Klub Renang" />
-
-<style id="swimora-v23-mobile-registration-fix">
-/* Mobile registration: allow the complete form to scroll instead of clipping inside a fixed-height panel. */
-@media (max-width:680px){
-  html body.swimora-public,
-  html.swimora-public { overflow:hidden!important; }
-  html body #publicRegisterView.sw188-public {
-    position:fixed!important; inset:0!important; width:100vw!important;
-    height:100dvh!important; overflow:hidden!important;
-  }
-  html body #publicRegisterView .sw188-stage:has(.sw188-form-wrap){
-    height:100dvh!important; min-height:100dvh!important;
-    overflow-y:auto!important; overflow-x:hidden!important;
-    -webkit-overflow-scrolling:touch!important;
-  }
-  html body #publicRegisterView .sw188-stage:has(.sw188-form-wrap) .sw188-content{
-    height:auto!important; min-height:100dvh!important;
-    padding:0 12px 28px!important; box-sizing:border-box!important;
-  }
-  html body #publicRegisterView .sw188-form-wrap{
-    height:auto!important; min-height:100dvh!important;
-    padding:10px 0 28px!important; box-sizing:border-box!important;
-  }
-  html body #publicRegisterView .sw188-form-head{
-    align-items:flex-start!important; flex-wrap:wrap!important; gap:10px!important;
-  }
-  html body #publicRegisterView .sw188-form-head h2{font-size:clamp(21px,6vw,28px)!important;line-height:1.2!important}
-  html body #publicRegisterView .sw188-form-head .sw188-back{max-width:100%!important;white-space:normal!important}
-  html body #publicRegisterView .sw188-form-box{
-    flex:0 0 auto!important; min-height:0!important; max-height:none!important;
-    height:auto!important; overflow:visible!important; padding:12px!important;
-    border-radius:18px!important; box-sizing:border-box!important;
-  }
-  html body #publicRegisterView .sw188-fields{
-    display:grid!important; grid-template-columns:minmax(0,1fr)!important;
-    gap:10px!important; padding:11px!important;
-  }
-  html body #publicRegisterView .sw188-field,
-  html body #publicRegisterView .sw188-field.full{grid-column:1!important;min-width:0!important}
-  html body #publicRegisterView .sw188-field input,
-  html body #publicRegisterView .sw188-field select,
-  html body #publicRegisterView .sw188-field textarea{
-    width:100%!important; min-width:0!important; min-height:42px!important;
-    font-size:14px!important; box-sizing:border-box!important;
-  }
-  html body #publicRegisterView .sw188-field input[type=file]{font-size:12px!important;padding:8px!important}
-  html body #publicRegisterView .sw188-actions{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:12px!important}
-  html body #publicRegisterView .sw188-check{line-height:1.5!important}
-  html body #publicRegisterView .sw188-submit{width:100%!important;min-height:48px!important}
-}
-</style>
-
 </head>
 <body>
 <div id="toastWrap" class="toast-wrap" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -4764,9 +4712,7 @@ const oldOpenReportModal=window.openReportModal;window.openReportModal=function(
   // Parent login is handled by the single consolidated login() above.
 
   function dayOptions(cls){const c=String(cls||'').toLowerCase();return c.includes('intermediate')||c.includes('prestasi')?['Senin','Rabu','Jumat','Sabtu','Minggu']:['Senin','Rabu','Sabtu','Minggu']}
-  function mountDays(selectId){const sel=document.getElementById(selectId);if(!sel||selectId==='pRclass'||document.getElementById(selectId+'Days'))return;const isPublic=selectId==='pRclass';const box=document.createElement('div');box.id=selectId+'Days';box.className='training-days-box field full';box.innerHTML='<label>'+(isPublic?'Hari latihan utama * (pilih satu)':'Hari Latihan')+'</label><div class="training-days-options"></div><small class="muted">'+(isPublic?'Pilih satu hari utama. Anda boleh menambah satu hari opsional di bawah.':'Pilih hari latihan sesuai kelas. Pilihan ini ikut disimpan pada data pendaftaran.')+'</small>';sel.parentElement?.after(box);const draw=()=>{box.querySelector('.training-days-options').innerHTML=dayOptions(sel.value).map(d=>`<label class="day-check"><input type="${isPublic?'radio':'checkbox'}" ${isPublic?'required':''} name="${selectId}Days" value="${d}"> ${d}</label>`).join('');if(isPublic)syncExtraDay()};sel.addEventListener('change',draw);draw()}
-  function syncExtraDay(){const main=document.querySelector('input[name="pRclassDays"]:checked')?.value;document.querySelectorAll('input[name="pRclassExtraDay"]').forEach(x=>{x.disabled=!!main&&x.value===main;if(x.disabled)x.checked=false});}
-  document.addEventListener('change',e=>{if(e.target?.name==='pRclassDays')syncExtraDay()});
+  function mountDays(selectId){const sel=document.getElementById(selectId);if(!sel||document.getElementById(selectId+'Days'))return;const box=document.createElement('div');box.id=selectId+'Days';box.className='training-days-box field full';box.innerHTML='<label>Hari Latihan</label><div class="training-days-options"></div><small class="muted">Pilih hari latihan sesuai kelas. Pilihan ini ikut disimpan pada data pendaftaran.</small>';sel.parentElement?.after(box);const draw=()=>{box.querySelector('.training-days-options').innerHTML=dayOptions(sel.value).map(d=>`<label class="day-check"><input type="checkbox" name="${selectId}Days" value="${d}"> ${d}</label>`).join('')};sel.addEventListener('change',draw);draw()}
   function mountAllDays(){mountDays('pRclass');mountDays('mRclass')}
   const oldPublicForm=window.publicRegistrationFormHTML;if(oldPublicForm){window.publicRegistrationFormHTML=function(){const h=oldPublicForm.apply(this,arguments);setTimeout(mountAllDays,50);return h}}
   document.addEventListener('DOMContentLoaded',()=>setTimeout(mountAllDays,100));setInterval(mountAllDays,1200);
@@ -4778,7 +4724,7 @@ const oldOpenReportModal=window.openReportModal;window.openReportModal=function(
   function secFmt(v){const n=Math.max(0,Math.round(Number(v)||0));return `${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`}
   function enrichPBItem(item,base,phase){const text=String(item.dose||''),m=text.match(/(\d+)\s*[x×]\s*(\d+)\s*m/i);if(!m||!base?.pbSeconds)return item;const reps=Number(m[1]),dist=Number(m[2]),raceM=Number(String(base.race||'100').match(/\d+/)?.[0]||100),phaseFactor=[1.08,1.04,1.0,1.02][phase]||1;const swim=Math.max(8,base.pbSeconds*Math.pow(dist/raceM,1.06)*phaseFactor),rest=dist<=50?20:dist<=100?25:35;const send=swim+rest;return Object.assign({},item,{target:`renang ${secFmt(swim)} / repetisi`,rest:`${secFmt(rest)} antar repetisi`,sendOff:secFmt(send),note:`${item.note||''} Target waktu berenang berbeda dari send-off. Send-off = waktu renang ${secFmt(swim)} + rest ${secFmt(rest)}.`})}
   const originalComplete=window.completeSessionForPB;if(originalComplete)window.completeSessionForPB=function(base,energy,phase,session,week,volume){const out=originalComplete.apply(this,arguments);if(!out)return out;['warmUp','preMain','mainSet','recovery','coolDown'].forEach(k=>{if(Array.isArray(out[k]))out[k]=out[k].map(x=>enrichPBItem(x,base,phase))});return out};
-  const style=document.createElement('style');style.textContent='.training-days-box{margin-top:8px}.training-days-options{display:flex;flex-wrap:wrap;gap:8px}.day-check{display:inline-flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid #cce0e5;border-radius:9px;background:#f5fbfc;font-size:13px;cursor:pointer}.day-check input{width:17px;min-height:17px;accent-color:#177e70}.day-check:has(input:checked){background:#dcefe4;border-color:#3d9a81}.full-scanner-shell{margin:-18px}.full-scanner-top{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;background:#062c3b;color:#fff}.full-scanner-stage{position:relative;min-height:min(72vh,680px);background:#020d12;overflow:hidden}.full-scanner-stage video{width:100%;height:min(72vh,680px);object-fit:cover}.full-scanner-dim{position:absolute;inset:0;background:rgba(0,0,0,.42);pointer-events:none}.full-scanner-stage .scanner-focus-box{position:absolute;left:50%;top:50%;width:min(72vw,360px);height:min(42vw,210px);transform:translate(-50%,-50%);border:3px solid #baff29;border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.15),0 0 28px rgba(186,255,41,.6);pointer-events:none}.full-scanner-stage .scanner-focus-line{position:absolute;left:calc(50% - min(72vw,360px)/2);top:50%;width:min(72vw,360px);height:3px;background:#baff29;box-shadow:0 0 14px #baff29;animation:scanLine 1.8s linear infinite;pointer-events:none}.full-scanner-help{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#fff;font-weight:700;text-shadow:0 1px 5px #000}.full-scanner-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;background:#fff}.full-scanner-shell .scanner-confirm{margin:12px 16px}.modal:has(.full-scanner-shell) .modal-content{width:min(96vw,900px);max-width:900px;padding:0;overflow:hidden}@keyframes scanLine{0%,100%{transform:translateY(-100px);opacity:.5}50%{transform:translateY(100px);opacity:1}}';document.head.appendChild(style);
+  const style=document.createElement('style');style.textContent='.training-days-box{margin-top:8px}.training-days-options{display:flex;flex-wrap:wrap;gap:8px}.day-check{display:inline-flex;align-items:center;gap:5px;padding:7px 10px;border:1px solid #cce0e5;border-radius:9px;background:#f5fbfc;font-size:13px}.full-scanner-shell{margin:-18px}.full-scanner-top{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;background:#062c3b;color:#fff}.full-scanner-stage{position:relative;min-height:min(72vh,680px);background:#020d12;overflow:hidden}.full-scanner-stage video{width:100%;height:min(72vh,680px);object-fit:cover}.full-scanner-dim{position:absolute;inset:0;background:rgba(0,0,0,.42);pointer-events:none}.full-scanner-stage .scanner-focus-box{position:absolute;left:50%;top:50%;width:min(72vw,360px);height:min(42vw,210px);transform:translate(-50%,-50%);border:3px solid #baff29;border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.15),0 0 28px rgba(186,255,41,.6);pointer-events:none}.full-scanner-stage .scanner-focus-line{position:absolute;left:calc(50% - min(72vw,360px)/2);top:50%;width:min(72vw,360px);height:3px;background:#baff29;box-shadow:0 0 14px #baff29;animation:scanLine 1.8s linear infinite;pointer-events:none}.full-scanner-help{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#fff;font-weight:700;text-shadow:0 1px 5px #000}.full-scanner-actions{display:flex;justify-content:flex-end;gap:8px;padding:12px 16px;background:#fff}.full-scanner-shell .scanner-confirm{margin:12px 16px}.modal:has(.full-scanner-shell) .modal-content{width:min(96vw,900px);max-width:900px;padding:0;overflow:hidden}@keyframes scanLine{0%,100%{transform:translateY(-100px);opacity:.5}50%{transform:translateY(100px);opacity:1}}';document.head.appendChild(style);
 })();
 </script>
 
@@ -8976,7 +8922,7 @@ function renderReportClassPanel(){const p=reportDescriptions[document.getElement
 const oldReports=window.renderReports;window.renderReports=function(){const r=oldReports?.apply(this,arguments);const f=document.getElementById('reportClassFilter')?.value;if(f){const tbody=document.getElementById('reportTable');if(tbody)tbody.querySelectorAll('tr').forEach(tr=>{const text=tr.textContent||'';const s=(db.students||[]).find(x=>text.includes(x.name));if(s&&s.class!==f)tr.remove()})}return r};setInterval(mountReportClass,700);
 const rptStyle=document.createElement('style');rptStyle.textContent='.report-class-panel{margin:0 0 16px;padding:16px 18px;border:1px solid #c9e5ea;border-radius:14px;background:linear-gradient(135deg,#f2fbfc,#fff);color:#20566a}.report-class-panel b{color:#087c82;font-size:16px}.report-class-panel p{margin:5px 0 10px;color:#5d7480;font-size:12px}.report-indicator-list{display:flex;flex-wrap:wrap;gap:6px}.report-indicator-list span{padding:6px 9px;border-radius:99px;background:#e2f6f4;color:#146878;font-size:11px;font-weight:700}';document.head.appendChild(rptStyle);
 /* Tenant: delete action with explicit confirmation; credential workflow remains from existing RPC */
-window.deleteTenant=async function(id,name){if(!id)return false;if(!confirm('Hapus tenant '+name+'? Penghapusan hanya diizinkan jika tenant kosong sesuai aturan database.'))return false;const c=typeof getSupabaseClient==='function'?getSupabaseClient():null;if(!c){toast('Koneksi Supabase belum tersedia.','error');return false}try{const {data,error}=await c.rpc('swimora_delete_empty_tenant_v23',{p_club_id:id});if(error)throw error;if(data&&data.ok===false)throw new Error(data.message||'Penghapusan ditolak server.');toast('Tenant '+name+' berhasil dihapus.','success');await refreshSuperAdminDashboard();return true}catch(e){console.error('deleteTenant',e);toast('Tenant belum terhapus: '+(e?.message||e),'error');return false}};
+window.deleteTenant=function(id,name){if(!id)return;if(!confirm('Hapus tenant '+name+'? Data tenant yang terkait dapat ikut terhapus sesuai aturan database.'))return;const c=getSupabaseClient();if(!c)return toast('Koneksi Supabase belum tersedia.','error');c.from('clubs').delete().eq('id',id).then(({error})=>{if(error)return toast('Tenant tidak dapat dihapus: '+error.message,'error');toast('Tenant berhasil dihapus.');refreshSuperAdminDashboard()})};
 const oldRefresh=window.refreshSuperAdminDashboard;window.refreshSuperAdminDashboard=async function(){const r=await oldRefresh?.apply(this,arguments);setTimeout(()=>{document.querySelectorAll('#tenantGrid .tenant-card').forEach(card=>{if(card.querySelector('.delete-tenant-btn'))return;const no=card.querySelector('.tenant-no')?.textContent||'';const tenantNo=(no.match(/\d+/)||[])[0];const tenant=(superAdminTenants||[]).find(x=>String(x.tenant_no)===String(Number(tenantNo)));const b=document.createElement('button');b.className='btn btn-outline btn-sm delete-tenant-btn';b.textContent='Hapus Tenant';b.onclick=()=>deleteTenant(tenant?.id,tenant?.name||no);card.querySelector('.tenant-actions')?.appendChild(b)})},150);return r};
 })();
 </script>
@@ -20006,8 +19952,8 @@ window.deleteTenant=async function(clubId,clubName='tenant'){
  const tenant=(superAdminTenants||[]).find(x=>String(x.id)===String(clubId));
  if(Number(tenant?.tenant_no)===1){if(typeof toast==='function')toast('Tenant #001 dilindungi dan tidak dapat dihapus.','error');return false}
  const yes=window.confirm('Hapus tenant “'+clubName+'”? Tindakan ini permanen dan dapat menghapus data tenant terkait. Pastikan ekspor/backup sudah tersedia.');if(!yes)return false;
- try{const client=typeof getSupabaseClient==='function'?getSupabaseClient():null;if(!client)throw new Error('Koneksi Supabase belum tersedia.');const {data,error}=await client.rpc('swimora_delete_empty_tenant_v23',{p_club_id:clubId});if(error)throw error;if(data&&data.ok===false)throw new Error(data.message||'Penghapusan ditolak.');if(typeof refreshSuperAdminDashboard==='function')await refreshSuperAdminDashboard();if(typeof toast==='function')toast('Tenant '+clubName+' berhasil dihapus.','success');return true}
- catch(err){console.error('deleteTenant',err);if(typeof toast==='function')toast('Tenant belum terhapus: '+(err?.message||err)+'. Pastikan fungsi swimora_delete_empty_tenant_v23 tersedia dan ID tenant benar.','error');return false}
+ try{const client=typeof getSupabaseClient==='function'?getSupabaseClient():null;if(!client)throw new Error('Koneksi Supabase belum tersedia.');const {data,error}=await client.rpc('delete_swimora_tenant',{p_club_id:clubId});if(error)throw error;if(data&&data.ok===false)throw new Error(data.message||'Penghapusan ditolak.');if(typeof refreshSuperAdminDashboard==='function')await refreshSuperAdminDashboard();if(typeof toast==='function')toast('Tenant '+clubName+' berhasil dihapus.','success');return true}
+ catch(err){console.error('deleteTenant',err);if(typeof toast==='function')toast('Tenant belum terhapus: '+(err?.message||err)+'. Pastikan fungsi delete_swimora_tenant sudah dipasang di Supabase.','error');return false}
 };
 })();
 </script>
@@ -20038,7 +19984,7 @@ window.deleteTenant=async function(clubId,clubName='tenant'){
  if(!confirm('Hapus tenant “'+name+'”? Tindakan permanen. Pastikan data sudah diekspor/di-backup.'))return false;
  try{
   const client=typeof getSupabaseClient==='function'?getSupabaseClient():null;if(!client)throw new Error('Koneksi Supabase belum tersedia.');
-  const {data,error}=await client.rpc('swimora_delete_empty_tenant_v23',{p_club_id:tenant.id});if(error)throw error;
+  const {data,error}=await client.rpc('delete_swimora_tenant',{p_club_id:tenant.id});if(error)throw error;
   if(data&&data.ok===false)throw new Error(data.message||'Penghapusan ditolak server.');
   if(typeof refreshSuperAdminDashboard==='function')await refreshSuperAdminDashboard();
   if(typeof toast==='function')toast('Tenant '+name+' berhasil dihapus.','success');return true;
@@ -20155,7 +20101,9 @@ window.deleteTenant=async function(id,name){
  const c=typeof getSupabaseClient==='function'?getSupabaseClient():null;
  if(!c){toastV20('Koneksi Supabase belum tersedia.','error');return false}
  try{
-  let r=await c.rpc('swimora_delete_empty_tenant_v23',{p_club_id:t.id});
+  let r=await c.rpc('delete_swimora_tenant',{p_club_id:t.id});
+  /* Fallback untuk instalasi lama yang belum memiliki RPC. */
+  if(r.error && /function|rpc|does not exist|not found/i.test(String(r.error.message||r.error))){r=await c.from('clubs').delete().eq('id',t.id)}
   if(r.error)throw r.error;
   if(r.data&&r.data.ok===false)throw new Error(r.data.message||'Penghapusan ditolak server.');
   if(typeof refreshSuperAdminDashboard==='function')await refreshSuperAdminDashboard();
@@ -20679,9 +20627,9 @@ function errorMessage(e){let m=String(e?.message||e||'Kesalahan tidak dikenal.')
 function message(text,success){const host=document.querySelector('.sw188-form-box')||document.getElementById('publicRegisterBody');if(!host){toast(text,success?'success':'error');return;}let el=host.querySelector('.sw23-registration-message');if(!el){el=document.createElement('div');el.className='sw23-registration-message';el.setAttribute('role','status');host.prepend(el)}el.textContent=text;el.classList.toggle('is-error',!success);el.scrollIntoView({block:'nearest',behavior:'smooth'});toast(text,success?'success':'error')}
 function optionalForm(){document.querySelectorAll('#publicRegisterView [id^="pR"]').forEach(e=>{e.required=false;e.removeAttribute('required')});document.querySelectorAll('.sw188-field label').forEach(l=>{[...l.childNodes].filter(n=>n.nodeType===3).forEach(n=>{n.textContent=n.textContent.replace(/\s*\*\s*/g,' ')})})}
 const oldForm=window.sw188Form;
-window.sw188Form=function(id){pendingRegistration=null;registrationCompleted=false;const r=oldForm?.apply(this,arguments);optionalForm();const box=document.querySelector('.sw188-actions');if(box&&!document.querySelector('.sw23-optional-note')){const note=document.createElement('p');note.className='sw23-optional-note';note.textContent='Biodata dan lampiran boleh dikosongkan untuk dilengkapi admin kemudian. Pilihan kelas menentukan tujuan pendaftaran.';box.before(note)}const fields=document.getElementById('pRclass')?.closest('.sw188-fields');if(fields){document.getElementById('pRextraDays')?.remove();const oldDays=document.getElementById('pRclassDays');if(oldDays)oldDays.remove();const days=['A','B'].includes(id)?['Senin','Rabu','Sabtu','Minggu']:String(id).toLowerCase().includes('privat')?['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu']:['Senin','Rabu','Jumat','Sabtu','Minggu'];const wrap=document.createElement('div');wrap.id='pRsingleDays';wrap.className='sw188-field full training-days-box';wrap.innerHTML='<label>Pilih Hari Latihan</label><div class="training-days-options">'+days.map(d=>'<label class="day-check"><input type="checkbox" name="pRclassDays" value="'+d+'"> '+d+'</label>').join('')+'</div><small class="muted">Pilih satu atau beberapa hari latihan.</small>';fields.append(wrap)}return r};
+window.sw188Form=function(id){pendingRegistration=null;registrationCompleted=false;const r=oldForm?.apply(this,arguments);optionalForm();const box=document.querySelector('.sw188-actions');if(box&&!document.querySelector('.sw23-optional-note')){const note=document.createElement('p');note.className='sw23-optional-note';note.textContent='Biodata dan lampiran boleh dikosongkan untuk dilengkapi admin kemudian. Pilihan kelas menentukan tujuan pendaftaran.';box.before(note)}const fields=document.getElementById('pRclass')?.closest('.sw188-fields');if(fields){const wrap=document.createElement('div');wrap.className='sw188-field full';const days=['A','B'].includes(id)?['Senin','Rabu','Sabtu','Minggu']:['Senin','Rabu','Jumat','Sabtu','Minggu'];wrap.innerHTML='<label>Hari latihan (opsional)</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px">'+days.map(d=>'<label style="display:flex;gap:7px;align-items:center"><input type="checkbox" name="pRclassDays" value="'+d+'" style="width:18px;min-height:18px">'+d+'</label>').join('')+'</div>';fields.append(wrap)}return r};
 const oldRegistrationLink=window.getPublicRegistrationLink;
-window.getPublicRegistrationLink=function(){if(activeClub?.slug&&location.protocol!=='file:')return new URL('/daftar/'+encodeURIComponent(activeClub.slug),location.origin).toString();const u=new URL(oldRegistrationLink());if(activeClub?.id){['club','club_id','tenant','slug'].forEach(k=>u.searchParams.delete(k));if(activeClub.slug)u.searchParams.set('club',activeClub.slug);else u.searchParams.set('club_id',activeClub.id)}return u.toString()};
+window.getPublicRegistrationLink=function(){const u=new URL(oldRegistrationLink());if(activeClub?.id){['club','club_id','tenant','slug'].forEach(k=>u.searchParams.delete(k));if(activeClub.slug)u.searchParams.set('club',activeClub.slug);else u.searchParams.set('club_id',activeClub.id)}return u.toString()};
 async function publicClub(client){const params=new URLSearchParams(location.search),slug=params.get('club')||params.get('tenant')||params.get('slug'),requested=params.get('club_id');let q=client.from('clubs').select('id,name,code,slug,status');if(requested)q=q.eq('id',requested);else if(slug)q=q.eq('slug',slug);else if(activeClub?.id)q=q.eq('id',activeClub.id);else q=q.eq('code','TRUDGEN');const {data,error}=await q.maybeSingle();if(error)throw error;if(!data?.id)throw new Error('Klub tujuan belum ditemukan. Minta link pendaftaran dari admin klub.');if(data.status!=='active')throw new Error('Klub tujuan sedang nonaktif; pendaftaran belum dapat dikirim.');return data}
 async function fileData(id,maxBytes){const f=document.getElementById(id)?.files?.[0];if(!f)return null;if(f.size>maxBytes)throw new Error((id==='pRphoto'?'Pas foto':'Bukti transfer')+' terlalu besar. Maksimal '+Math.round(maxBytes/1024/1024)+' MB.');const allowed=id==='pRphoto'?['image/jpeg','image/png','image/webp']:['image/jpeg','image/png','image/webp','application/pdf'];if(!allowed.includes(f.type))throw new Error('Format lampiran tidak didukung. Gunakan JPG/PNG/WebP'+(id==='pRproof'?' atau PDF.':'.'));const dataUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(f)});return {name:f.name,type:f.type,dataUrl}}
 function removeUnsupported(error,payload){const m=String(error?.message||'');const hit=m.match(/Could not find the '([^']+)' column/i)||m.match(/column [\w.]*["']?([a-z_]+)["']? does not exist/i);const key=hit?.[1];if(!['training_fee','training_days','registration_details'].includes(key)||!(key in payload))return null;delete payload[key];return key}
@@ -20699,7 +20647,6 @@ window.submitPublicRegistration=async function(){
    const today=nowISO(),code='REG-'+(globalThis.crypto?.randomUUID?.().replace(/-/g,'').slice(0,16)||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8)).toUpperCase();
    const kind=canonical(cls.name),pkg=kind==='pemula a'?4:kind==='pemula b'?8:kind==='intermediate'?12:kind==='prestasi'?16:4;
    const days=[...document.querySelectorAll('input[name="pRclassDays"]:checked')].map(x=>x.value);
-   if(!days.length){message('Pilih minimal satu hari latihan sebelum mengirim pendaftaran.',false);return false}
    const details={nickname:get('pRnickname'),nisn:get('pRNisn')||get('pRnisn'),address:get('pRaddress'),medicalHistory:get('pRmedical'),parentJob:get('pRparentJob'),parentAddress:get('pRparentAddress'),program:get('pRclass'),submittedAt:new Date().toISOString(),photo:await fileData('pRphoto',1024*1024),proof:await fileData('pRproof',2*1024*1024)};
    const payload={club_id:club.id,member_code:code,full_name:get('pRname')||'Calon Siswa '+code.slice(-6),gender:get('pRgender')||null,birth_place:get('pRbirthPlace')||null,birth_date:get('pRbirth')||null,school_name:get('pRschool')||null,class_id:cls.id,parent_name:get('pRparent')||null,parent_phone:get('pRphone')||'',package_sessions:pkg,remaining_sessions:pkg,billing_mode:['pemula a','pemula b'].includes(kind)?'session':'monthly',billing_cycle_sessions:pkg,join_date:today,status:'Aktif',training_fee:fee,training_days:days,registration_details:details,updated_at:new Date().toISOString()};
    // Registration does not attest payment: no last_payment_date is fabricated.
@@ -20753,7 +20700,10 @@ window.deleteTenant=async function(id){
  try{
   const existing=await client.from('students').select('id',{count:'exact',head:true}).eq('club_id',t.id);if(existing.error)throw existing.error;if(existing.count==null)throw new Error('Jumlah siswa tidak dapat diverifikasi. Penghapusan dibatalkan.');if(existing.count>0)throw new Error('Tenant memiliki '+existing.count+' siswa. Gunakan Nonaktifkan.');
   let r=await client.rpc('swimora_delete_empty_tenant_v23',{p_club_id:t.id});
-  if(r.error&&missingRPC(r.error))throw new Error('Fungsi penghapusan V23 tidak ditemukan di Supabase. Pastikan SQL V23 sudah dijalankan; penghapusan langsung dibatalkan demi keamanan data.');
+  if(r.error&&missingRPC(r.error)){
+   r=await client.from('clubs').delete().eq('id',t.id).select('id');
+   if(!r.error&&(!Array.isArray(r.data)||!r.data.some(x=>x.id===t.id)))throw new Error('Server tidak menghapus baris tenant. Pasang SQL V23 agar izin Super Admin dan relasi kelas/user diperiksa server.');
+  }
   if(r.error)throw r.error;if(r.data?.ok===false)throw new Error(r.data.message||'Server menolak penghapusan.');
   const check=await client.from('clubs').select('id').eq('id',t.id).maybeSingle();if(check.error)throw check.error;if(check.data)throw new Error('Tenant masih ada di server. Penghapusan belum berhasil.');
   await refreshSuperAdminDashboard();toast('Tenant '+t.name+' benar-benar terhapus dari server.','success');return true;
