@@ -4347,7 +4347,7 @@ async function login(e){
       const rawChildren=Array.isArray(result.data)?result.data:[];
       const children=rawChildren.map(cloudRowToStudent);
       if(!children.length)throw new Error('Nomor HP orang tua atau PIN tidak cocok dengan data siswa. Pastikan nomor wali tersimpan pada kolom parent_phone dan PIN adalah 4 digit terakhir nomor tersebut.');
-      db.students=children;currentParentPhone=targetParent;currentRole='parent';currentParentStudentId=children[0].id;enterApp('parent');toast(`Login orang tua berhasil. Anak ditemukan: ${children.map(s=>s.name).join(', ')}`);
+      db.students=children;currentParentPhone=phone;currentRole='parent';currentParentStudentId=children[0].id;enterApp('parent');toast(`Login orang tua berhasil. Anak ditemukan: ${children.map(s=>s.name).join(', ')}`);
     }catch(err){toast('Login orang tua gagal: '+(err?.message||err),'error');}
     finally{if(btn){btn.disabled=false;btn.textContent='Masuk ke Sistem →';}}
     return;
