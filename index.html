@@ -4343,15 +4343,16 @@ async function login(e){
         .filter((v,i,a)=>v&&a.indexOf(v)===i);
       const result=await client.from('students').select('*').in('parent_phone',variants);
       if(result.error)throw result.error;
-      // Filter ulang di browser supaya semua anak dengan nomor yang sama ikut masuk.
-      const normalizedInput=phone.replace(/^62/,'0');
-      const children=(result.data||[]).map(cloudRowToStudent).filter(s=>{
-        const stored=normalizePhone(s.phone);
-        return stored===phone || stored===normalizedInput || stored.replace(/^62/,'0')===normalizedInput || stored.replace(/^0/,'62')===intl;
-      });
-      if(!children.length)throw new Error('Nomor HP belum ditemukan pada data siswa. Pastikan nomor orang tua tersimpan pada kolom HP Orang Tua/Wali (parent_phone), bukan nomor HP anak.');
-      if(phone.slice(-4)!==pin)throw new Error('PIN harus 4 digit terakhir nomor HP.');
-      db.students=children;currentParentPhone=phone;currentRole='parent';currentParentStudentId=children[0].id;enterApp('parent');toast(`Login orang tua berhasil. Anak ditemukan: ${children.map(s=>s.name).join(', ')}`);
+      // PENTING: cocokkan nomor pada kolom parent_phone SEBELUM mengubah bentuk data.
+      // cloudRowToStudent dapat memetakan s.phone ke nomor HP siswa, bukan nomor wali.
+      const digitsOnly=v=>String(v??'').replace(/\D/g,'');
+      const normalizeParent=v=>{let d=digitsOnly(v);if(d.startsWith('62'))d='0'+d.slice(2);if(d&&!d.startsWith('0'))d='0'+d;return d;};
+      const targetParent=normalizeParent(phoneInput);
+      const rawChildren=(result.data||[]).filter(row=>normalizeParent(row.parent_phone)===targetParent);
+      const children=rawChildren.map(cloudRowToStudent);
+      if(!children.length)throw new Error('Nomor HP belum ditemukan pada kolom parent_phone. Pastikan nomor wali diisi tanpa salah ketik, lalu coba lagi.');
+      if(digitsOnly(phoneInput).slice(-4)!==pin)throw new Error('PIN harus 4 digit terakhir nomor HP orang tua yang dimasukkan.');
+      db.students=children;currentParentPhone=targetParent;currentRole='parent';currentParentStudentId=children[0].id;enterApp('parent');toast(`Login orang tua berhasil. Anak ditemukan: ${children.map(s=>s.name).join(', ')}`);
     }catch(err){toast('Login orang tua gagal: '+(err?.message||err),'error');}
     finally{if(btn){btn.disabled=false;btn.textContent='Masuk ke Sistem →';}}
     return;
