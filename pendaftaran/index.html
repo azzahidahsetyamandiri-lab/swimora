@@ -19915,7 +19915,7 @@ function packages(){
 function classesForLocation(locationId){
  var l=trainingLocations.find(function(x){return x.id===locationId});if(!l)return packages();selectedTrainingLocation=l;
  var available=l.id==='aquland'?packs:packs.filter(function(p){return p.id==='V'});
- var html=shellStart()+'<div class="sw188-content"><div class="sw188-pack-wrap">'+top()+'<div class="sw188-section-head"><div><small>02 • Pilih Program / Kelas</small><h2>'+esc188(l.name)+'</h2><p>📍 '+esc188(l.address)+'</p><p class="sw188-location-note">'+esc188(l.note)+'</p></div><button class="sw188-back" type="button" onclick="window.sw188Packages()">← Ganti Kolam</button></div><div class="sw188-grid">';
+ var html=shellStart()+'<div class="sw188-content"><div class="sw188-pack-wrap">'+top()+'<div class="sw188-section-head"><div><small>02 • Pilih Program / Kelas</small><h2>'+esc188(l.name)+'</h2><p>📍 '+esc188(l.address)+'</p><p class="sw188-location-note">'+esc188(l.note)+'</p></div><button class="sw188-back" type="button" onclick="window.sw188Packages()">← Ganti Kolam</button></div><div class="sw188-grid '+(l.id==='aquland'?'sw188-aquland-classes':'sw188-hotel-classes')+'">';
  available.forEach(function(p,i){html+='<button type="button" class="sw188-pkg" onclick="window.sw188Form(\''+p.id+'\')"><span class="sw188-no">0'+(i+1)+'</span><h3>'+esc188(p.name)+'</h3><div class="freq">'+esc188(p.freq)+'</div>'+(p.id==='V'&&l.id!=='aquland'?'':'<p>'+esc188(p.desc)+'</p>')+(p.id==='V'&&l.id!=='aquland'?'<div class="sw188-private-benefits"><b>Keunggulan privat</b><p>Latihan sesuai kemampuan, koreksi teknik personal, dan progres terarah.</p><small>Rp600.000 / 4 pertemuan. Tiket kolam belum termasuk.</small></div>':'')+'<div class="sw188-price"><b>'+money188(p.price)+'</b><span>PILIH →</span></div></button>'});
  html+='</div></div></div>';return html
 }
@@ -20842,4 +20842,17 @@ window.addEventListener('load',()=>{const bar=document.querySelector('#view-stud
 
 <style id="swimora-registration-location-v1">
 .sw188-location-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:18px}.sw188-location-card{text-align:left;min-height:280px}.sw188-location-address{font-size:13px;line-height:1.6;margin:12px 0;color:var(--e-muted,#546e63);font-weight:600}.sw188-location-note{display:inline-block;padding:8px 11px;border-radius:10px;background:rgba(36,125,118,.1);font-weight:700}.sw188-private-benefits{margin:12px 0;padding:12px;border-radius:12px;background:rgba(36,125,118,.09);text-align:left}.sw188-private-benefits ul{margin:8px 0 8px 18px;padding:0}.sw188-private-benefits li{margin:4px 0;font-size:12px;line-height:1.45}.sw188-private-benefits small{display:block;font-weight:800;line-height:1.5}.sw188-form-head p{line-height:1.6}@media(max-width:850px){.sw188-location-grid{grid-template-columns:1fr}.sw188-location-card{min-height:0}}
+
+/* Tata letak kartu privat di Hotel Ratu dan Le Dian: lebar normal, ringkas, tidak menjulang. */
+html body .sw188-grid.sw188-hotel-classes{grid-template-columns:minmax(0,500px)!important;grid-template-rows:auto!important;align-content:start!important;justify-content:start!important;gap:14px!important;}
+html body .sw188-grid.sw188-hotel-classes .sw188-pkg{width:100%!important;min-height:0!important;height:auto!important;grid-template-columns:48px minmax(0,1fr)!important;grid-template-rows:auto auto auto auto!important;gap:7px 14px!important;padding:20px!important;align-content:start!important;}
+html body .sw188-grid.sw188-hotel-classes .sw188-pkg .sw188-no{grid-column:1!important;grid-row:1 / 3!important;}
+html body .sw188-grid.sw188-hotel-classes .sw188-pkg h3{grid-column:2!important;grid-row:1!important;}
+html body .sw188-grid.sw188-hotel-classes .sw188-pkg .freq{grid-column:2!important;grid-row:2!important;}
+html body .sw188-grid.sw188-hotel-classes .sw188-private-benefits{grid-column:1 / -1!important;grid-row:3!important;margin:7px 0 0!important;padding:10px 12px!important;display:flex!important;flex-wrap:wrap!important;align-items:center!important;gap:6px 12px!important;}
+html body .sw188-grid.sw188-hotel-classes .sw188-private-benefits>b{font-size:13px!important;white-space:nowrap!important;}
+html body .sw188-grid.sw188-hotel-classes .sw188-private-benefits p{grid-column:auto!important;margin:0!important;font-size:12px!important;line-height:1.45!important;flex:1 1 180px!important;}
+html body .sw188-grid.sw188-hotel-classes .sw188-private-benefits small{font-size:11px!important;line-height:1.4!important;flex-basis:100%!important;}
+html body .sw188-grid.sw188-hotel-classes .sw188-price{grid-column:1 / -1!important;grid-row:4!important;margin-top:4px!important;align-self:end!important;}
+@media(max-width:620px){html body .sw188-grid.sw188-hotel-classes{grid-template-columns:minmax(0,1fr)!important;}html body .sw188-grid.sw188-hotel-classes .sw188-pkg{padding:16px!important;}}
 </style>
